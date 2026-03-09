@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import { AlertTriangle, ShoppingCart, TrendingUp } from 'lucide-react';
+import { AlertTriangle, ShoppingCart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '../utils/formatters';
 
@@ -59,55 +59,66 @@ const NotificationDropdown = ({ transactions, budget, exchangeRate, onClose }) =
     const hasNotifications = budgetAlert || recentPurchases.length > 0;
 
     return (
-        <div className="notif-dropdown" ref={ref}>
-            <div className="notif-dropdown-header">
-                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t('notifications.title')}</span>
+        <div
+            ref={ref}
+            className="absolute right-0 top-full mt-2 w-80 bg-[#141417] border border-[#1F1F23] rounded-xl shadow-2xl z-50 overflow-hidden"
+        >
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-[#1F1F23]">
+                <span className="text-sm font-semibold text-white">{t('notifications.title')}</span>
             </div>
 
-            {!hasNotifications && (
-                <div className="notif-dropdown-empty">
-                    {t('notifications.empty')}
-                </div>
-            )}
-
-            {/* Budget alert */}
-            {budgetAlert && (
-                <div className={`notif-item notif-item-${budgetAlert.type}`}>
-                    <div className="notif-item-icon" style={{
-                        background: budgetAlert.type === 'danger' ? 'var(--color-error-dim)' : 'var(--color-warning-dim)',
-                        color: budgetAlert.type === 'danger' ? 'var(--color-error)' : 'var(--color-warning)',
-                    }}>
-                        <AlertTriangle size={16} />
+            {/* Items */}
+            <div className="max-h-[300px] overflow-y-auto">
+                {!hasNotifications && (
+                    <div className="px-4 py-8 text-center text-sm text-[#505058]">
+                        {t('notifications.empty')}
                     </div>
-                    <div className="notif-item-content">
-                        <div className="notif-item-title">{t('notifications.budgetAlert')}</div>
-                        <div className="notif-item-text">{budgetAlert.message}</div>
-                    </div>
-                </div>
-            )}
+                )}
 
-            {/* Recent purchases */}
-            {recentPurchases.length > 0 && (
-                <>
-                    <div className="notif-section-label">{t('notifications.recentActivity')}</div>
-                    {recentPurchases.map(tx => (
-                        <div key={tx.id} className="notif-item">
-                            <div className="notif-item-icon" style={{
-                                background: 'var(--color-primary-dim)',
-                                color: 'var(--color-primary)',
-                            }}>
-                                <ShoppingCart size={14} />
-                            </div>
-                            <div className="notif-item-content">
-                                <div className="notif-item-title">{tx.title}</div>
-                                <div className="notif-item-text">
-                                    {parseFloat(tx.price || 0).toFixed(2)} {tx.currency || '€'} · {formatDate(tx.purchase_date, i18n.language)}
-                                </div>
+                {/* Budget alert */}
+                {budgetAlert && (
+                    <div className="px-4 py-3 border-b border-[#1F1F23] flex items-start gap-3">
+                        <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                            budgetAlert.type === 'danger'
+                                ? 'bg-red-500/10 text-red-400'
+                                : 'bg-amber-500/10 text-amber-400'
+                        }`}>
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                            <div className="text-sm text-white">{t('notifications.budgetAlert')}</div>
+                            <div className={`text-xs mt-1 ${budgetAlert.type === 'danger' ? 'text-red-400' : 'text-amber-400'}`}>
+                                {budgetAlert.message}
                             </div>
                         </div>
-                    ))}
-                </>
-            )}
+                    </div>
+                )}
+
+                {/* Recent purchases */}
+                {recentPurchases.length > 0 && (
+                    <>
+                        <div className="px-4 py-2 border-b border-[#1F1F23]">
+                            <span className="text-xs font-medium text-[#505058] uppercase tracking-wider">
+                                {t('notifications.recentActivity')}
+                            </span>
+                        </div>
+                        {recentPurchases.map(tx => (
+                            <div key={tx.id} className="px-4 py-3 border-b border-[#1F1F23] last:border-b-0 flex items-start gap-3">
+                                <div className="w-7 h-7 rounded-md bg-[#FF5C00]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <ShoppingCart className="w-3.5 h-3.5 text-[#FF5C00]" />
+                                </div>
+                                <div>
+                                    <div className="text-sm text-white">{tx.title}</div>
+                                    <div className="text-xs text-[#505058] mt-1">
+                                        {parseFloat(tx.price || 0).toFixed(2)} {tx.currency || '€'} · {formatDate(tx.purchase_date, i18n.language)}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </>
+                )}
+            </div>
         </div>
     );
 };

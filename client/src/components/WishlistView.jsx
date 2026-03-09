@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Heart, ArrowRight, Pencil, Trash2, Plus } from 'lucide-react';
+import { Heart, ArrowRight, Pencil, Trash2, Plus, Gamepad2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const WishlistView = ({ transactions, onEdit, onDelete, onStatusChange, onAdd, exchangeRate }) => {
@@ -17,14 +17,19 @@ const WishlistView = ({ transactions, onEdit, onDelete, onStatusChange, onAdd, e
 
     if (transactions.length === 0) {
         return (
-            <div className="wishlist-empty">
-                <div className="wishlist-empty-icon">
-                    <Heart size={48} />
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                    <Gamepad2 size={28} className="text-muted-foreground" />
                 </div>
-                <h3>{t('wishlist.emptyTitle')}</h3>
-                <p>{t('wishlist.emptyDescription')}</p>
-                <button className="btn btn-primary" onClick={onAdd}>
-                    <Plus size={18} />
+                <div className="text-center">
+                    <h3 className="text-base font-semibold text-white mb-1">{t('wishlist.emptyTitle')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('wishlist.emptyDescription')}</p>
+                </div>
+                <button
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors"
+                    onClick={onAdd}
+                >
+                    <Plus size={16} />
                     {t('wishlist.addGame')}
                 </button>
             </div>
@@ -32,57 +37,102 @@ const WishlistView = ({ transactions, onEdit, onDelete, onStatusChange, onAdd, e
     }
 
     return (
-        <div className="wishlist-section">
-            <div className="wishlist-header">
+        <div className="flex flex-col gap-5">
+            {/* Header row */}
+            <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="wishlist-title">{t('wishlist.title')}</h2>
-                    <span className="wishlist-count">{t('wishlist.gamesCount', { count: transactions.length })}</span>
+                    <h2 className="text-base font-semibold text-white">{t('wishlist.title')}</h2>
+                    <span className="text-xs text-muted-foreground mt-0.5 block">
+                        {t('wishlist.gamesCount', { count: transactions.length })}
+                    </span>
                 </div>
-                <div className="wishlist-value">
-                    <span className="wishlist-value-label">{t('wishlist.estimatedValue')}</span>
-                    <span className="wishlist-value-amount">{totalValue.toFixed(2)} &euro;</span>
+                <div className="text-right">
+                    <div className="text-xs text-muted-foreground mb-0.5">{t('wishlist.estimatedValue')}</div>
+                    <div className="text-base font-mono font-semibold text-white">
+                        {totalValue.toFixed(2)} &euro;
+                    </div>
                 </div>
             </div>
 
-            <div className="wishlist-grid">
+            {/* Table */}
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+                {/* Table header */}
+                <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] px-5 py-3 border-b border-border">
+                    <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                        {t('wishlist.columns.game')}
+                    </span>
+                    <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                        {t('wishlist.columns.platform')}
+                    </span>
+                    <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                        {t('wishlist.columns.genre')}
+                    </span>
+                    <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                        {t('wishlist.columns.price')}
+                    </span>
+                    <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                        {t('wishlist.columns.actions')}
+                    </span>
+                </div>
+
+                {/* Data rows */}
                 {transactions.map(tx => (
-                    <div key={tx.id} className="wishlist-card">
-                        {tx.cover_url ? (
-                            <img src={tx.cover_url} alt={tx.title} className="wishlist-card-cover" />
-                        ) : (
-                            <div className="wishlist-card-placeholder">
-                                <Heart size={28} />
-                            </div>
-                        )}
-                        <div className="wishlist-card-info">
-                            <h4 className="wishlist-card-title">{tx.title}</h4>
-                            <div className="wishlist-card-tags">
-                                {tx.platform && <span className="wishlist-tag">{tx.platform}</span>}
-                                {tx.genre && <span className="wishlist-tag">{tx.genre}</span>}
-                            </div>
-                            {(tx.price !== null && tx.price !== undefined) && (
-                                <div className="wishlist-card-price">
-                                    {parseFloat(tx.price || 0).toFixed(2)} {tx.currency || 'EUR'}
+                    <div
+                        key={tx.id}
+                        className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] items-center px-5 py-3.5 border-b border-border last:border-b-0 hover:bg-secondary/40 transition-colors"
+                    >
+                        {/* Game name */}
+                        <div className="flex items-center gap-3 min-w-0">
+                            {tx.cover_url ? (
+                                <img
+                                    src={tx.cover_url}
+                                    alt={tx.title}
+                                    className="w-9 h-9 rounded-md object-cover flex-shrink-0"
+                                />
+                            ) : (
+                                <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                                    <Heart size={14} className="text-muted-foreground" />
                                 </div>
                             )}
+                            <span className="text-sm font-medium text-white truncate">{tx.title}</span>
                         </div>
-                        <div className="wishlist-card-actions">
+
+                        {/* Platform */}
+                        <span className="text-sm text-secondary-foreground truncate">
+                            {tx.platform || '—'}
+                        </span>
+
+                        {/* Genre */}
+                        <span className="text-sm text-secondary-foreground truncate">
+                            {tx.genre || '—'}
+                        </span>
+
+                        {/* Price */}
+                        <span className="text-sm font-mono text-white">
+                            {(tx.price !== null && tx.price !== undefined)
+                                ? `${parseFloat(tx.price || 0).toFixed(2)} ${tx.currency || 'EUR'}`
+                                : '—'
+                            }
+                        </span>
+
+                        {/* Actions */}
+                        <div className="flex gap-1 items-center">
                             <button
-                                className="wishlist-action-btn wishlist-action-move"
+                                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
                                 onClick={() => onStatusChange(tx.id, 'Backlog')}
                                 title={t('wishlist.moveToBacklog')}
                             >
                                 <ArrowRight size={14} />
                             </button>
                             <button
-                                className="wishlist-action-btn"
+                                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-white transition-colors"
                                 onClick={() => onEdit(tx)}
                                 title={t('common.edit')}
                             >
                                 <Pencil size={14} />
                             </button>
                             <button
-                                className="wishlist-action-btn wishlist-action-delete"
+                                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                                 onClick={() => onDelete(tx.id)}
                                 title={t('common.delete')}
                             >

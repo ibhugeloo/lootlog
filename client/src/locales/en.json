@@ -12,7 +12,17 @@
     "all": "All",
     "allFeminine": "All",
     "unknown": "Unknown",
-    "filters": "Filters"
+    "filters": "Filters",
+    "freePlan": "Free Plan",
+    "premiumFeature": "Premium feature"
+  },
+  "nav": {
+    "menu": "Menu",
+    "dashboard": "Dashboard",
+    "transactions": "Transactions",
+    "analytics": "Analytics",
+    "wishlist": "Wishlist",
+    "settings": "Settings"
   },
   "auth": {
     "login": "Login",
@@ -32,7 +42,9 @@
     "resetDesc": "Enter your email and we'll send you a reset link.",
     "resetButton": "Send reset link",
     "resetEmailSent": "Email sent! Check your inbox (and spam folder).",
-    "backToLogin": "Back"
+    "backToLogin": "Back",
+    "noAccount": "Don't have an account?",
+    "alreadyAccount": "Already have an account?"
   },
   "header": {
     "settings": "Settings",
@@ -228,7 +240,7 @@
       "passwordChanging": "Changing...",
       "changePasswordButton": "Change password",
       "passwordChangeError": "Error changing password.",
-      "signOut": "Sign out",
+      "signOut": "Sign Out",
       "dangerZone": "Danger zone",
       "deleteAccount": "Delete my account",
       "deleteConfirmTitle": "Permanently delete account?",

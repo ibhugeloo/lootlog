@@ -12,7 +12,17 @@
     "all": "Tous",
     "allFeminine": "Toutes",
     "unknown": "Inconnu",
-    "filters": "Filtres"
+    "filters": "Filtres",
+    "freePlan": "Plan Gratuit",
+    "premiumFeature": "Fonctionnalité Premium"
+  },
+  "nav": {
+    "menu": "Menu",
+    "dashboard": "Tableau de bord",
+    "transactions": "Transactions",
+    "analytics": "Analytique",
+    "wishlist": "Liste de souhaits",
+    "settings": "Paramètres"
   },
   "auth": {
     "login": "Connexion",
@@ -32,7 +42,9 @@
     "resetDesc": "Entre ton email et on t'enverra un lien de réinitialisation.",
     "resetButton": "Envoyer le lien",
     "resetEmailSent": "Email envoyé ! Vérifie ta boîte mail (et les spams).",
-    "backToLogin": "Retour"
+    "backToLogin": "Retour",
+    "noAccount": "Pas encore de compte ?",
+    "alreadyAccount": "Déjà un compte ?"
   },
   "header": {
     "settings": "Paramètres",

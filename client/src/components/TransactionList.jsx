@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Filter, Search, Trash2, Edit2, Download, ChevronLeft, ChevronRight, Gamepad2, Clock } from 'lucide-react';
+import { Filter, Search, Trash2, Edit2, Download, ChevronLeft, ChevronRight, Gamepad2, ChevronDown } from 'lucide-react';
 import { toEUR } from '../utils/currency';
 import { useTranslation } from 'react-i18next';
 import { formatDate, getLocale } from '../utils/formatters';
@@ -16,6 +16,24 @@ const TYPE_KEYS = {
     subscription: 'transactionTypesShort.subscription',
 };
 
+const TYPE_PILL_CLASSES = {
+    game: 'bg-primary/15 text-primary',
+    dlc: 'bg-[#8B5CF6]/15 text-[#8B5CF6]',
+    skin: 'bg-[#3B82F6]/15 text-[#3B82F6]',
+    battle_pass: 'bg-[#F59E0B]/15 text-[#F59E0B]',
+    currency: 'bg-[#10B981]/15 text-[#10B981]',
+    loot_box: 'bg-[#EC4899]/15 text-[#EC4899]',
+    subscription: 'bg-[#22C55E]/15 text-[#22C55E]',
+};
+
+const STATUS_PILL_CLASSES = {
+    Backlog: 'bg-[#6B7280]/15 text-[#9CA3AF]',
+    Playing: 'bg-[#3B82F6]/15 text-[#3B82F6]',
+    Completed: 'bg-[#22C55E]/15 text-[#22C55E]',
+    Wishlist: 'bg-[#8B5CF6]/15 text-[#8B5CF6]',
+    Abandoned: 'bg-[#EF4444]/15 text-[#EF4444]',
+};
+
 const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, isPremium = false }) => {
     const { t, i18n } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,6 +47,7 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
     const [type, setType] = useState('All');
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState({ key: 'purchase_date', direction: 'descending' });
+    const [filtersOpen, setFiltersOpen] = useState(true);
 
     // Extract unique filter values from transactions
     const platforms = useMemo(() => ['All', ...new Set(transactions.map(tx => tx.platform).filter(Boolean))], [transactions]);
@@ -149,33 +168,28 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
         return 'expensive';
     };
 
+    const filterInputClass = "w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors";
+    const filterLabelClass = "text-xs font-semibold text-secondary-foreground mb-1 block";
+
     return (
-        <div className="glass-panel" style={{ padding: '2rem' }}>
+        <div className="bg-card border border-border rounded-xl p-8">
             {/* Summary Banner */}
-            <div style={{
-                background: 'var(--color-primary-dim)',
-                padding: '1.5rem',
-                borderRadius: '12px',
-                marginBottom: '2rem',
-                borderLeft: '4px solid var(--color-primary)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '1rem',
-            }}>
+            <div className="bg-primary/5 border-l-4 border-primary rounded-lg p-5 mb-6 flex justify-between items-center flex-wrap gap-4">
                 <div>
-                    <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-text)' }}>{t('transactions.filteredExpenses')}</h4>
-                    <p style={{ margin: '4px 0 0 0', color: 'var(--color-text-dim)', fontSize: '0.9rem' }}>
+                    <h4 className="text-base font-semibold text-white m-0">{t('transactions.filteredExpenses')}</h4>
+                    <p className="text-sm text-secondary-foreground mt-1 mb-0">
                         {sortedData.length} {t('transactions.transactions')}
                     </p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                <div className="flex items-center gap-6">
+                    <div className="font-mono text-3xl font-bold text-primary">
                         {totalSpent.toFixed(2)} €
                     </div>
                     {isPremium && (
-                        <button className="btn-export" onClick={exportCSV}>
+                        <button
+                            className="flex items-center gap-2 px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-white hover:border-primary/50 transition-colors"
+                            onClick={exportCSV}
+                        >
                             <Download size={16} />
                             CSV
                         </button>
@@ -184,143 +198,263 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
             </div>
 
             {/* Filters */}
-            <div style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem', color: 'var(--color-primary)' }}>
-                    <Filter size={20} />
-                    <h3>{t('common.filters')}</h3>
-                </div>
+            <div className="mb-6">
+                <button
+                    type="button"
+                    className="flex items-center gap-2 mb-4 text-primary hover:text-accent transition-colors"
+                    onClick={() => setFiltersOpen(v => !v)}
+                >
+                    <Filter size={18} />
+                    <h3 className="text-sm font-semibold m-0">{t('common.filters')}</h3>
+                    <ChevronDown size={16} className={`transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-                    <div>
-                        <label>{t('common.search')}</label>
-                        <div style={{ position: 'relative' }}>
-                            <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--color-text-dim)' }} />
-                            <input type="text" placeholder={t('transactions.searchPlaceholder')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ paddingLeft: '36px' }} />
+                {filtersOpen && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                        {/* Search */}
+                        <div>
+                            <label className={filterLabelClass}>{t('common.search')}</label>
+                            <div className="relative">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                <input
+                                    type="text"
+                                    placeholder={t('transactions.searchPlaceholder')}
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className={`${filterInputClass} pl-8`}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Platform */}
+                        <div>
+                            <label className={filterLabelClass}>{t('transactions.platform')}</label>
+                            <div className="relative">
+                                <select
+                                    value={platform}
+                                    onChange={e => setPlatform(e.target.value)}
+                                    className={`${filterInputClass} appearance-none pr-8`}
+                                >
+                                    {platforms.map(p => <option key={p} value={p}>{p === 'All' ? t('transactions.allPlatforms') : p}</option>)}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Status */}
+                        <div>
+                            <label className={filterLabelClass}>{t('transactions.status')}</label>
+                            <div className="relative">
+                                <select
+                                    value={status}
+                                    onChange={e => setStatus(e.target.value)}
+                                    className={`${filterInputClass} appearance-none pr-8`}
+                                >
+                                    <option value="All">{t('transactions.allStatuses')}</option>
+                                    <option value="Backlog">{t('statusLabels.Backlog')}</option>
+                                    <option value="Playing">{t('statusLabels.Playing')}</option>
+                                    <option value="Completed">{t('statusLabels.Completed')}</option>
+                                    <option value="Wishlist">{t('statusLabels.Wishlist')}</option>
+                                    <option value="Abandoned">{t('statusLabels.Abandoned')}</option>
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Type */}
+                        <div>
+                            <label className={filterLabelClass}>{t('transactions.type')}</label>
+                            <div className="relative">
+                                <select
+                                    value={type}
+                                    onChange={e => setType(e.target.value)}
+                                    className={`${filterInputClass} appearance-none pr-8`}
+                                >
+                                    <option value="All">{t('transactions.allTypes')}</option>
+                                    {Object.entries(TYPE_KEYS).map(([val, key]) => (
+                                        <option key={val} value={val}>{t(key)}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Genre */}
+                        <div>
+                            <label className={filterLabelClass}>{t('transactions.genre')}</label>
+                            <div className="relative">
+                                <select
+                                    value={genre}
+                                    onChange={e => setGenre(e.target.value)}
+                                    className={`${filterInputClass} appearance-none pr-8`}
+                                >
+                                    {genres.map(g => <option key={g} value={g}>{g === 'All' ? t('transactions.allGenres') : g}</option>)}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Store */}
+                        <div>
+                            <label className={filterLabelClass}>{t('transactions.store')}</label>
+                            <div className="relative">
+                                <select
+                                    value={store}
+                                    onChange={e => setStore(e.target.value)}
+                                    className={`${filterInputClass} appearance-none pr-8`}
+                                >
+                                    {stores.map(s => <option key={s} value={s}>{s === 'All' ? t('transactions.allStores') : s}</option>)}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Date From */}
+                        <div>
+                            <label className={filterLabelClass}>{t('transactions.dateFrom')}</label>
+                            <input
+                                type="date"
+                                value={dateStart}
+                                onChange={e => setDateStart(e.target.value)}
+                                className={filterInputClass}
+                            />
+                        </div>
+
+                        {/* Date To */}
+                        <div>
+                            <label className={filterLabelClass}>{t('transactions.dateTo')}</label>
+                            <input
+                                type="date"
+                                value={dateEnd}
+                                onChange={e => setDateEnd(e.target.value)}
+                                className={filterInputClass}
+                            />
+                        </div>
+
+                        {/* Currency */}
+                        <div>
+                            <label className={filterLabelClass}>{t('transactions.currency')}</label>
+                            <div className="relative">
+                                <select
+                                    value={currency}
+                                    onChange={e => setCurrency(e.target.value)}
+                                    className={`${filterInputClass} appearance-none pr-8`}
+                                >
+                                    {currencies.map(c => <option key={c} value={c}>{c === 'All' ? t('transactions.allCurrencies') : c}</option>)}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <label>{t('transactions.platform')}</label>
-                        <select value={platform} onChange={e => setPlatform(e.target.value)}>
-                            {platforms.map(p => <option key={p} value={p}>{p === 'All' ? t('transactions.allPlatforms') : p}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label>{t('transactions.status')}</label>
-                        <select value={status} onChange={e => setStatus(e.target.value)}>
-                            <option value="All">{t('transactions.allStatuses')}</option>
-                            <option value="Backlog">{t('statusLabels.Backlog')}</option>
-                            <option value="Playing">{t('statusLabels.Playing')}</option>
-                            <option value="Completed">{t('statusLabels.Completed')}</option>
-                            <option value="Wishlist">{t('statusLabels.Wishlist')}</option>
-                            <option value="Abandoned">{t('statusLabels.Abandoned')}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>{t('transactions.type')}</label>
-                        <select value={type} onChange={e => setType(e.target.value)}>
-                            <option value="All">{t('transactions.allTypes')}</option>
-                            {Object.entries(TYPE_KEYS).map(([val, key]) => (
-                                <option key={val} value={val}>{t(key)}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label>{t('transactions.genre')}</label>
-                        <select value={genre} onChange={e => setGenre(e.target.value)}>
-                            {genres.map(g => <option key={g} value={g}>{g === 'All' ? t('transactions.allGenres') : g}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label>{t('transactions.store')}</label>
-                        <select value={store} onChange={e => setStore(e.target.value)}>
-                            {stores.map(s => <option key={s} value={s}>{s === 'All' ? t('transactions.allStores') : s}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label>{t('transactions.dateFrom')}</label>
-                        <input type="date" value={dateStart} onChange={e => setDateStart(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>{t('transactions.dateTo')}</label>
-                        <input type="date" value={dateEnd} onChange={e => setDateEnd(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>{t('transactions.currency')}</label>
-                        <select value={currency} onChange={e => setCurrency(e.target.value)}>
-                            {currencies.map(c => <option key={c} value={c}>{c === 'All' ? t('transactions.allCurrencies') : c}</option>)}
-                        </select>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* Table */}
-            <div style={{ overflowX: 'auto' }}>
-                <table className="custom-table">
-                    <thead>
+            <div className="overflow-x-auto">
+                <table className="w-full">
+                    <thead className="border-b border-border text-xs text-muted-foreground">
                         <tr>
-                            <th onClick={() => requestSort('purchase_date')}>{t('transactions.date')}{getSortIndicator('purchase_date')}</th>
-                            <th onClick={() => requestSort('title')}>{t('transactions.game')}{getSortIndicator('title')}</th>
-                            <th onClick={() => requestSort('platform')}>{t('transactions.platform')}{getSortIndicator('platform')}</th>
-                            <th onClick={() => requestSort('price')}>{t('transactions.price')}{getSortIndicator('price')}</th>
-                            <th onClick={() => requestSort('rating')}>{t('transactions.rating')}{getSortIndicator('rating')}</th>
-
-                            <th onClick={() => requestSort('status')}>{t('transactions.status')}{getSortIndicator('status')}</th>
-                            <th>{t('transactions.actions')}</th>
+                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('purchase_date')}>
+                                {t('transactions.date')}{getSortIndicator('purchase_date')}
+                            </th>
+                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('title')}>
+                                {t('transactions.game')}{getSortIndicator('title')}
+                            </th>
+                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('platform')}>
+                                {t('transactions.platform')}{getSortIndicator('platform')}
+                            </th>
+                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('price')}>
+                                {t('transactions.price')}{getSortIndicator('price')}
+                            </th>
+                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('rating')}>
+                                {t('transactions.rating')}{getSortIndicator('rating')}
+                            </th>
+                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('status')}>
+                                {t('transactions.status')}{getSortIndicator('status')}
+                            </th>
+                            <th className="text-left font-medium px-5 py-3">
+                                {t('transactions.actions')}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {paginatedData.map(tx => {
                             const cph = getCostPerHour(tx);
+                            const typeKey = tx.type || 'game';
+                            const typePillClass = TYPE_PILL_CLASSES[typeKey] || 'bg-muted text-secondary-foreground';
+                            const statusPillClass = STATUS_PILL_CLASSES[tx.status] || 'bg-muted text-secondary-foreground';
+
                             return (
-                                <tr key={tx.id}>
-                                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(tx.purchase_date, i18n.language)}</td>
-                                    <td>
-                                        <div className="game-cell">
+                                <tr key={tx.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
+                                    <td className="px-5 py-3.5 whitespace-nowrap text-sm text-secondary-foreground">
+                                        {formatDate(tx.purchase_date, i18n.language)}
+                                    </td>
+                                    <td className="px-5 py-3.5">
+                                        <div className="flex items-center gap-3">
                                             {tx.cover_url ? (
-                                                <img src={tx.cover_url} alt={tx.title} className="game-cover-mini" />
+                                                <img
+                                                    src={tx.cover_url}
+                                                    alt={tx.title}
+                                                    className="w-8 h-10 rounded object-cover shrink-0"
+                                                />
                                             ) : (
-                                                <div className="game-cover-placeholder">
-                                                    <Gamepad2 size={16} style={{ color: 'var(--color-primary)', opacity: 0.6 }} />
+                                                <div className="w-8 h-10 rounded bg-muted flex items-center justify-center shrink-0">
+                                                    <Gamepad2 size={14} className="text-primary opacity-60" />
                                                 </div>
                                             )}
                                             <div>
-                                                <div className="game-title-text">{tx.title}</div>
+                                                <div className="text-sm font-medium text-white">{tx.title}</div>
                                                 {tx.genre && tx.genre !== 'Other' && (
-                                                    <div className="game-genre-tag">{tx.genre}</div>
+                                                    <div className="text-xs text-muted-foreground mt-0.5">{tx.genre}</div>
                                                 )}
                                             </div>
                                         </div>
                                     </td>
-                                    <td><span className={`badge badge-platform-${tx.platform.toLowerCase().replace(/\s+/g, '-')}`}>{tx.platform}</span></td>
-                                    <td style={{ whiteSpace: 'nowrap' }}>{parseFloat(tx.price).toFixed(2)} {tx.currency}</td>
-                                    <td>
+                                    <td className="px-5 py-3.5">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-secondary-foreground">
+                                            {tx.platform}
+                                        </span>
+                                    </td>
+                                    <td className="px-5 py-3.5 whitespace-nowrap">
+                                        <span className="font-mono text-white text-sm">
+                                            {parseFloat(tx.price).toFixed(2)} {tx.currency}
+                                        </span>
+                                    </td>
+                                    <td className="px-5 py-3.5">
                                         {tx.rating ? (
-                                            <div className="rating-display">
-                                                <span className="rating-star">{'★'.repeat(Math.min(tx.rating, 5))}</span>
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '4px' }}>{tx.rating}/10</span>
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-primary text-sm">{'★'.repeat(Math.min(tx.rating, 5))}</span>
+                                                <span className="text-xs text-muted-foreground">{tx.rating}/10</span>
                                             </div>
                                         ) : (
-                                            <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+                                            <span className="text-muted-foreground">—</span>
                                         )}
                                     </td>
-
-                                    <td>
+                                    <td className="px-5 py-3.5">
                                         {(tx.type && tx.type !== 'game') ? (
-                                            <span className={`badge-type badge-type-${tx.type}`}>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${typePillClass}`}>
                                                 {TYPE_KEYS[tx.type] ? t(TYPE_KEYS[tx.type]) : tx.type}
                                             </span>
                                         ) : (
-                                            <span className={`badge badge-${tx.status}`}>{t(`statusLabels.${tx.status}`)}</span>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusPillClass}`}>
+                                                {t(`statusLabels.${tx.status}`)}
+                                            </span>
                                         )}
                                     </td>
-                                    <td>
-                                        <div style={{ display: 'flex', gap: '6px' }}>
-                                            <button className="btn-icon-only" onClick={() => onEdit(tx)}
-                                                style={{ color: 'var(--color-primary)', background: 'var(--color-primary-dim)' }} title={t('common.edit')}>
+                                    <td className="px-5 py-3.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                className="w-8 h-8 flex items-center justify-center rounded-md transition-colors text-primary hover:bg-primary/10"
+                                                onClick={() => onEdit(tx)}
+                                                title={t('common.edit')}
+                                            >
                                                 <Edit2 size={15} />
                                             </button>
-                                            <button className="btn-icon-only" onClick={() => onDelete(tx.id)}
-                                                style={{ color: 'var(--color-error)', background: 'var(--color-error-dim)' }} title={t('common.delete')}>
+                                            <button
+                                                className="w-8 h-8 flex items-center justify-center rounded-md transition-colors text-destructive hover:bg-destructive/10"
+                                                onClick={() => onDelete(tx.id)}
+                                                title={t('common.delete')}
+                                            >
                                                 <Trash2 size={15} />
                                             </button>
                                         </div>
@@ -332,17 +466,21 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                 </table>
 
                 {sortedData.length === 0 && (
-                    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-dim)' }}>
-                        <Gamepad2 size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                        <p>{t('transactions.noGamesFound')}</p>
+                    <div className="py-16 flex flex-col items-center justify-center text-muted-foreground">
+                        <Gamepad2 size={40} className="opacity-30 mb-4" />
+                        <p className="text-sm">{t('transactions.noGamesFound')}</p>
                     </div>
                 )}
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="pagination">
-                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                <div className="flex items-center gap-1.5 mt-6 flex-wrap">
+                    <button
+                        className="w-8 h-8 flex items-center justify-center rounded-md border border-border text-secondary-foreground hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                    >
                         <ChevronLeft size={16} />
                     </button>
 
@@ -361,18 +499,26 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                             <button
                                 key={page}
                                 onClick={() => setCurrentPage(page)}
-                                className={currentPage === page ? 'active' : ''}
+                                className={`w-8 h-8 flex items-center justify-center rounded-md text-sm transition-colors ${
+                                    currentPage === page
+                                        ? 'bg-primary text-white'
+                                        : 'border border-border text-secondary-foreground hover:text-white'
+                                }`}
                             >
                                 {page}
                             </button>
                         );
                     })}
 
-                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                    <button
+                        className="w-8 h-8 flex items-center justify-center rounded-md border border-border text-secondary-foreground hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                    >
                         <ChevronRight size={16} />
                     </button>
 
-                    <span className="pagination-info">
+                    <span className="ml-2 text-xs text-muted-foreground">
                         {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, sortedData.length)} {t('transactions.of')} {sortedData.length}
                     </span>
                 </div>

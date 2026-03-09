@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, X, Wallet, Crown, Search, Bell, Settings, Calendar, ChevronDown, LayoutGrid, Heart, Download, Upload } from 'lucide-react';
+import { Plus, X, Search, Bell, Download, Upload, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import { useAuth } from './hooks/useAuth';
 import { usePlan } from './hooks/usePlan';
@@ -12,7 +12,7 @@ import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import OnboardingFlow from './components/OnboardingFlow';
 import UpgradeModal from './components/UpgradeModal';
-import SettingsModal from './components/SettingsModal';
+import SettingsPage from './components/SettingsPage';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import StatsOverview from './components/StatsOverview';
@@ -25,12 +25,13 @@ import WishlistView from './components/WishlistView';
 import Toast from './components/Toast';
 import ImportModal from './components/ImportModal';
 import OfflineBanner from './components/OfflineBanner';
+import Sidebar from './components/Sidebar';
 import { exportTransactionsCsv } from './utils/exportCsv';
 import { SkeletonStats, SkeletonChart, SkeletonTable } from './components/SkeletonLoader';
 import { identifyUser, resetUser, trackEvent } from './posthog';
 
 function App() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, loading: authLoading, signIn, signUp, signOut, resetPassword, deleteAccount } = useAuth();
   const { isPremium, limits, canAddTransaction, createCheckoutSession, checkoutLoading, refreshPlan } = usePlan(user?.id);
   const { profile, loading: profileLoading, updateProfile, completeOnboarding } = useProfile(user?.id);
@@ -40,22 +41,17 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  const [yearFilter, setYearFilter] = useState('All');
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [exchangeRate, setExchangeRate] = useState(0.92);
   const [toast, setToast] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [activeView, setActiveView] = useState('all');
 
   const showToast = useCallback((message, type = 'error') => {
     setToast({ message, type });
   }, []);
 
-  // Cmd+K shortcut for search
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -67,7 +63,6 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Handle Stripe return
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('session_id')) {
@@ -76,13 +71,6 @@ function App() {
     }
   }, []);
 
-  // Apply theme
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  // Fetch exchange rate
   useEffect(() => {
     const fetchRate = async () => {
       try {
@@ -98,7 +86,6 @@ function App() {
     fetchRate();
   }, []);
 
-  // PostHog: identify user on login, reset on logout
   useEffect(() => {
     if (user) {
       identifyUser(user.id, { email: user.email });
@@ -107,41 +94,22 @@ function App() {
     }
   }, [user]);
 
-  // Fetch data on user change
   useEffect(() => {
     fetchTransactions();
     fetchBudget();
   }, [fetchTransactions, fetchBudget]);
 
-  // Get available years
-  const availableYears = useMemo(() => {
-    const years = [...new Set(transactions.map(tx => new Date(tx.purchase_date).getFullYear()))];
-    return years.sort((a, b) => b - a);
-  }, [transactions]);
-
-  // Filter transactions by year
-  const filteredByYear = useMemo(() => {
-    if (yearFilter === 'All') return transactions;
-    return transactions.filter(tx => new Date(tx.purchase_date).getFullYear() === parseInt(yearFilter));
-  }, [transactions, yearFilter]);
-
-  // Games list (for parent game autocomplete)
   const gamesList = useMemo(() => {
     return transactions.filter(tx => tx.type === 'game' || !tx.type);
   }, [transactions]);
 
-  // Wishlist transactions
   const wishlistTransactions = useMemo(() => {
     return transactions.filter(tx => tx.status === 'Wishlist');
   }, [transactions]);
 
-  // Change transaction status
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await supabase
-        .from('transactions')
-        .update({ status: newStatus })
-        .eq('id', id);
+      await supabase.from('transactions').update({ status: newStatus }).eq('id', id);
       await fetchTransactions();
     } catch (err) {
       console.error(err);
@@ -149,7 +117,6 @@ function App() {
     }
   };
 
-  // Add or Update Transaction
   const handleSaveTransaction = async (transaction) => {
     try {
       await saveTransaction(transaction, editingTransaction?.id);
@@ -166,7 +133,6 @@ function App() {
     }
   };
 
-  // Save budget
   const handleSaveBudget = async (amount) => {
     try {
       await saveBudget(amount);
@@ -178,17 +144,9 @@ function App() {
     }
   };
 
-  const openAddModal = () => {
-    setEditingTransaction(null);
-    setShowForm(true);
-  };
+  const openAddModal = () => { setEditingTransaction(null); setShowForm(true); };
+  const openEditModal = (transaction) => { setEditingTransaction(transaction); setShowForm(true); };
 
-  const openEditModal = (transaction) => {
-    setEditingTransaction(transaction);
-    setShowForm(true);
-  };
-
-  // Delete Transaction
   const handleDelete = async (id) => {
     if (!window.confirm(t('transactions.confirmDelete'))) return;
     try {
@@ -200,13 +158,12 @@ function App() {
     }
   };
 
-  // Auth gate
   if (authLoading) {
     return (
-      <div className="auth-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>{t('common.loading')}</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -221,317 +178,249 @@ function App() {
     );
   }
 
-  // Wait for profile to load before deciding onboarding vs dashboard
   if (profileLoading) {
     return (
-      <div className="auth-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>{t('common.loading')}</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     );
   }
 
-  // Show onboarding for new users
   if (!profile.onboarding_completed) {
     return <OnboardingFlow profile={profile} onComplete={completeOnboarding} />;
   }
 
-  return (
-    <div className="container">
-      {/* Header */}
-      <header className="app-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            className="avatar-header-btn"
-            onClick={() => setShowSettings(true)}
-            title={t('header.settings')}
-            style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--card-border)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card-highlight)', cursor: 'pointer' }}
-          >
-            <span className="avatar-emoji" style={{ fontSize: '1.2rem' }}>{profile.avatar || '🎮'}</span>
-          </button>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', letterSpacing: '-0.5px', fontWeight: '500' }}>
-            {profile.display_name || 'Solis'}
-          </h2>
-          <div className="view-tabs">
-            <button className={`view-tab ${activeView === 'all' ? 'active' : ''}`} onClick={() => setActiveView('all')}>
-              <LayoutGrid size={14} />
-              {t('header.viewAll')}
-            </button>
-            <button className={`view-tab ${activeView === 'wishlist' ? 'active' : ''}`} onClick={() => setActiveView('wishlist')}>
-              <Heart size={14} />
-              {t('header.viewWishlist')}
-              {wishlistTransactions.length > 0 && (
-                <span className="view-tab-count">{wishlistTransactions.length}</span>
-              )}
-            </button>
-          </div>
+  const DashboardContent = () => (
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="font-serif text-2xl font-semibold text-white">{t('nav.dashboard')}</h1>
+          {!isPremium && (
+            <span className="bg-secondary text-secondary-foreground text-xs font-medium rounded-full px-3 py-1">{t('common.freePlan')}</span>
+          )}
         </div>
-
-        <div className="header-controls">
-          {/* Year Filter — compact pill */}
-          <div className="year-pill-wrapper">
-            <Calendar size={14} className="year-pill-icon" />
-            <select
-              className="year-pill-select"
-              value={yearFilter}
-              onChange={e => setYearFilter(e.target.value)}
-            >
-              <option value="All">{t('header.allYears')}</option>
-              {availableYears.map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-            <ChevronDown size={12} className="year-pill-chevron" />
-          </div>
-
-          {/* Icon buttons */}
-          <button className="btn-icon-only theme-toggle" onClick={() => setShowSearch(true)} title={t('common.search')}>
-            <Search size={18} />
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowSearch(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('common.search')}>
+            <Search className="w-4 h-4" />
           </button>
-          <div style={{ position: 'relative' }}>
-            <button
-              className="btn-icon-only theme-toggle"
-              onClick={() => setShowNotifications(prev => !prev)}
-              title={t('header.notifications')}
-            >
-              <Bell size={18} />
+          <div className="relative">
+            <button onClick={() => setShowNotifications(prev => !prev)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.notifications')}>
+              <Bell className="w-4 h-4" />
               {isPremium && budget && (() => {
                 const now = new Date();
                 const monthSpent = transactions
                   .filter(tx => { const d = new Date(tx.purchase_date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
                   .reduce((sum, tx) => sum + (parseFloat(tx.price) || 0), 0);
-                return monthSpent / budget.amount >= 0.8 ? <span className="notif-dot" /> : null;
+                return monthSpent / budget.amount >= 0.8 ? <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" /> : null;
               })()}
             </button>
             {showNotifications && (
-              <NotificationDropdown
-                transactions={transactions}
-                budget={budget}
-                exchangeRate={exchangeRate}
-                onClose={() => setShowNotifications(false)}
-              />
+              <NotificationDropdown transactions={transactions} budget={budget} exchangeRate={exchangeRate} onClose={() => setShowNotifications(false)} />
             )}
           </div>
-          <button className="btn-icon-only theme-toggle" onClick={() => setShowSettings(true)} title={t('header.settings')}>
-            <Settings size={18} />
-          </button>
-
-          {/* Budget Button — Premium only */}
           {isPremium && (
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowBudgetModal(true)}
-              title={t('header.setBudget')}
-            >
-              <Wallet size={18} />
-              {t('header.budget')}
+            <button onClick={() => { exportTransactionsCsv(transactions); trackEvent('csv_exported', { count: transactions.length }); }} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.exportCsv')}>
+              <Download className="w-4 h-4" />
             </button>
           )}
-
-          {/* Export CSV — Premium only */}
-          {isPremium && (
-            <button
-              className="btn-icon-only theme-toggle"
-              onClick={() => { exportTransactionsCsv(filteredByYear); trackEvent('csv_exported', { count: filteredByYear.length }); }}
-              title={t('header.exportCsv')}
-            >
-              <Download size={18} />
-            </button>
-          )}
-
-          {/* Import */}
-          <button
-            className="btn-icon-only theme-toggle"
-            onClick={() => setShowImport(true)}
-            title={t('header.import')}
-          >
-            <Upload size={18} />
+          <button onClick={() => setShowImport(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.import')}>
+            <Upload className="w-4 h-4" />
           </button>
-
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              if (!canAddTransaction(transactions.length)) {
-                setShowUpgradeModal(true);
-              } else {
-                openAddModal();
-              }
-            }}
-          >
-            <Plus size={20} />
+          <button onClick={() => { if (!canAddTransaction(transactions.length)) { setShowUpgradeModal(true); } else { openAddModal(); } }} className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors">
+            <Plus className="w-4 h-4" />
             {t('header.addTransaction')}
           </button>
-
-          {/* Upgrade button — Free only */}
-          {!isPremium && (
-            <button
-              className="btn"
-              onClick={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }}
-              title={t('header.upgradeToPremium')}
-              style={{
-                background: 'var(--color-premium-gradient)',
-                color: 'white',
-                gap: '0.4rem',
-                boxShadow: '0 2px 12px rgba(212,168,83,0.3)',
-              }}
-            >
-              <Crown size={18} />
-              {t('header.premium')}
-            </button>
-          )}
         </div>
-      </header>
+      </div>
 
-      {activeView === 'all' ? (
-        loading ? (
-          <>
-            <SkeletonStats />
-            <SkeletonChart />
-            <SkeletonTable />
-          </>
-        ) : (
-          <>
-            {/* Stats Cards */}
-            <StatsOverview transactions={filteredByYear} exchangeRate={exchangeRate} />
-
-            {/* Budget Widget — Premium only */}
-            {isPremium && budget && (
-              <BudgetWidget
-                budget={budget}
-                transactions={filteredByYear}
-                exchangeRate={exchangeRate}
-              />
-            )}
-
-            {/* Charts Section */}
-            <AnalyticsCharts transactions={filteredByYear} exchangeRate={exchangeRate} isPremium={isPremium} />
-
-            {/* Main Content */}
-            <main>
-              <TransactionList
-                transactions={filteredByYear}
-                onDelete={handleDelete}
-                onEdit={openEditModal}
-                exchangeRate={exchangeRate}
-                isPremium={isPremium}
-              />
-            </main>
-          </>
-        )
+      {loading ? (
+        <><SkeletonStats /><SkeletonChart /><SkeletonTable /></>
       ) : (
-        <WishlistView
-          transactions={wishlistTransactions}
-          onEdit={openEditModal}
-          onDelete={handleDelete}
-          onStatusChange={handleStatusChange}
-          onAdd={openAddModal}
-          exchangeRate={exchangeRate}
-        />
-      )}
+        <>
+          <StatsOverview transactions={transactions} exchangeRate={exchangeRate} />
+          {isPremium && budget && <BudgetWidget budget={budget} transactions={transactions} exchangeRate={exchangeRate} />}
 
-      {/* Transaction Form Modal */}
+          <div className="bg-card border border-border rounded-xl flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <h2 className="text-[15px] font-semibold text-white">{t('transactions.filteredExpenses')}</h2>
+              <NavLinkButton to="/transactions" />
+            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border text-xs text-muted-foreground">
+                  <th className="text-left font-medium px-6 py-3">{t('transactions.game')}</th>
+                  <th className="text-left font-medium px-6 py-3">{t('transactions.platform')}</th>
+                  <th className="text-left font-medium px-6 py-3">{t('transactions.date')}</th>
+                  <th className="text-right font-medium px-6 py-3">{t('transactions.price')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.slice(0, 6).map((tx) => (
+                  <tr key={tx.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => openEditModal(tx)}>
+                    <td className="px-6 py-3.5">
+                      <div className="flex items-center gap-3">
+                        {tx.cover_url ? <img src={tx.cover_url} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" /> : <div className="w-8 h-8 rounded-md shrink-0 bg-primary/20" />}
+                        <span className="text-sm text-white font-medium truncate">{tx.title}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-3.5"><span className="text-sm text-secondary-foreground">{tx.platform}</span></td>
+                    <td className="px-6 py-3.5"><span className="text-sm text-secondary-foreground">{new Date(tx.purchase_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></td>
+                    <td className="px-6 py-3.5 text-right"><span className="text-sm font-mono text-white">{parseFloat(tx.price).toFixed(2)} {tx.currency}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {!isPremium && <UpgradeBanner onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }} />}
+        </>
+      )}
+    </div>
+  );
+
+  const TransactionsContent = () => (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="font-serif text-2xl text-white">{t('nav.transactions')}</h1>
+          {!isPremium && <span className="bg-secondary text-secondary-foreground text-xs font-medium rounded-full px-3 py-1">{t('common.freePlan')}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2.5 border border-border text-secondary-foreground hover:text-white text-sm font-medium rounded-lg transition-colors">
+            <Upload className="w-4 h-4" />{t('header.import')}
+          </button>
+          <button onClick={() => { if (!canAddTransaction(transactions.length)) { setShowUpgradeModal(true); } else { openAddModal(); } }} className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors">
+            <Plus className="w-4 h-4" />{t('header.addTransaction')}
+          </button>
+        </div>
+      </div>
+      {!isPremium && transactions.length >= 40 && (
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-amber-400">{t('transactions.filteredExpenses')}</span>
+            <span className="text-xs text-muted-foreground">{transactions.length}/50 {t('transactions.transactions')}</span>
+          </div>
+          <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${(transactions.length / 50) * 100}%` }} />
+          </div>
+        </div>
+      )}
+      <TransactionList transactions={transactions} onDelete={handleDelete} onEdit={openEditModal} exchangeRate={exchangeRate} isPremium={isPremium} />
+      {!isPremium && <UpgradeBanner onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }} />}
+    </div>
+  );
+
+  const AnalyticsContent = () => (
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center gap-3">
+        <h1 className="font-serif text-2xl font-semibold text-white">{t('nav.analytics')}</h1>
+        {!isPremium && <span className="bg-secondary text-secondary-foreground text-xs font-medium rounded-full px-3 py-1">{t('common.freePlan')}</span>}
+      </div>
+      {loading ? <SkeletonChart /> : <AnalyticsCharts transactions={transactions} exchangeRate={exchangeRate} isPremium={isPremium} />}
+      {!isPremium && <UpgradeBanner onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }} />}
+    </div>
+  );
+
+  const WishlistContent = () => (
+    <WishlistView transactions={wishlistTransactions} onEdit={openEditModal} onDelete={handleDelete} onStatusChange={handleStatusChange} onAdd={openAddModal} exchangeRate={exchangeRate} />
+  );
+
+  const SettingsContent = () => (
+    <SettingsPage
+      profile={profile} updateProfile={updateProfile} isPremium={isPremium} plan={isPremium ? 'premium' : 'free'}
+      userEmail={user?.email} onSignOut={signOut} onDeleteAccount={deleteAccount}
+      onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }}
+      budget={budget} transactions={transactions} exchangeRate={exchangeRate} onSaveBudget={handleSaveBudget}
+      onCancelSubscription={async () => {
+        try {
+          await supabase.from('subscriptions').update({ plan: 'free' }).eq('user_id', user.id);
+          await refreshPlan();
+        } catch (err) {
+          console.error(err);
+          showToast(t('settings.subscription.cancelError'));
+        }
+      }}
+    />
+  );
+
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar isPremium={isPremium} profile={profile} onSignOut={signOut} />
+
+      <main className="flex-1 overflow-auto p-6 lg:p-8 xl:p-10 pl-16 lg:pl-8 xl:pl-10">
+        <Routes>
+          <Route path="/dashboard" element={<DashboardContent />} />
+          <Route path="/transactions" element={<TransactionsContent />} />
+          <Route path="/analytics" element={<AnalyticsContent />} />
+          <Route path="/wishlist" element={<WishlistContent />} />
+          <Route path="/settings" element={<SettingsContent />} />
+          <Route path="*" element={<Navigate to="/dashboard" />} />
+        </Routes>
+      </main>
+
       {showForm && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false) }}>
-          <div className="glass-modal">
-            <div className="modal-header">
-              <h2>{editingTransaction ? t('transactions.editTransaction') : t('transactions.newPurchase')}</h2>
-              <button onClick={() => setShowForm(false)} className="btn-icon-only modal-close">
-                <X size={24} />
-              </button>
+        <div className="fixed inset-0 bg-[#0A0A0B]/60 flex items-center justify-center z-50" onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false) }}>
+          <div className="w-[560px] max-h-[90vh] overflow-y-auto bg-card border border-border rounded-xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+              <h2 className="font-serif text-lg text-white">{editingTransaction ? t('transactions.editTransaction') : t('transactions.newPurchase')}</h2>
+              <button onClick={() => setShowForm(false)} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-white transition-colors"><X className="w-4 h-4" /></button>
             </div>
-            <TransactionForm
-              onAddTransaction={handleSaveTransaction}
-              initialData={editingTransaction}
-              games={gamesList}
-            />
+            <div className="px-6 py-5">
+              <TransactionForm onAddTransaction={handleSaveTransaction} initialData={editingTransaction} games={gamesList} />
+            </div>
           </div>
         </div>
       )}
 
-      {/* Budget Modal */}
       {showBudgetModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowBudgetModal(false) }}>
-          <div className="glass-modal" style={{ maxWidth: '400px' }}>
-            <div className="modal-header">
-              <h2>{t('budget.monthlyBudget')}</h2>
-              <button onClick={() => setShowBudgetModal(false)} className="btn-icon-only modal-close">
-                <X size={24} />
-              </button>
+        <div className="fixed inset-0 bg-[#0A0A0B]/60 flex items-center justify-center z-50" onClick={(e) => { if (e.target === e.currentTarget) setShowBudgetModal(false) }}>
+          <div className="w-[400px] bg-card border border-border rounded-xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+              <h2 className="font-serif text-lg text-white">{t('budget.monthlyBudget')}</h2>
+              <button onClick={() => setShowBudgetModal(false)} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-white transition-colors"><X className="w-4 h-4" /></button>
             </div>
-            <BudgetForm
-              currentBudget={budget}
-              onSave={handleSaveBudget}
-            />
+            <div className="px-6 py-5">
+              <BudgetForm currentBudget={budget} onSave={handleSaveBudget} />
+            </div>
           </div>
         </div>
       )}
 
-      {/* Upgrade Modal */}
-      {showUpgradeModal && (
-        <UpgradeModal
-          onClose={() => setShowUpgradeModal(false)}
-          onCheckout={createCheckoutSession}
-          checkoutLoading={checkoutLoading}
-        />
-      )}
-
-      {/* Settings Modal */}
-      {showSettings && (
-        <SettingsModal
-          onClose={() => setShowSettings(false)}
-          profile={profile}
-          updateProfile={updateProfile}
-          isPremium={isPremium}
-          plan={isPremium ? 'premium' : 'free'}
-          userEmail={user?.email}
-          onSignOut={signOut}
-          onDeleteAccount={deleteAccount}
-          onCancelSubscription={async () => {
-            try {
-              await supabase
-                .from('subscriptions')
-                .update({ plan: 'free' })
-                .eq('user_id', user.id);
-              await refreshPlan();
-              setShowSettings(false);
-            } catch (err) {
-              console.error(err);
-              showToast(t('settings.subscription.cancelError'));
-            }
-          }}
-        />
-      )}
-
-      {/* Import Modal */}
-      {showImport && (
-        <ImportModal
-          onClose={() => { setShowImport(false); fetchTransactions(); }}
-          userId={user.id}
-        />
-      )}
-
-      {/* Search Overlay */}
-      {showSearch && (
-        <SearchOverlay
-          transactions={transactions}
-          onSelect={openEditModal}
-          onClose={() => setShowSearch(false)}
-        />
-      )}
-
-      {/* Toast notifications */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-
-      {/* Offline banner */}
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} onCheckout={createCheckoutSession} checkoutLoading={checkoutLoading} />}
+      {showImport && <ImportModal onClose={() => { setShowImport(false); fetchTransactions(); }} userId={user.id} />}
+      {showSearch && <SearchOverlay transactions={transactions} onSelect={openEditModal} onClose={() => setShowSearch(false)} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <OfflineBanner />
+    </div>
+  );
+}
+
+function NavLinkButton({ to }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  return (
+    <button onClick={() => navigate(to)} className="flex items-center gap-1.5 text-sm text-primary hover:text-accent transition-colors">
+      {t('header.viewAll')}<span className="text-xs">&rarr;</span>
+    </button>
+  );
+}
+
+function UpgradeBanner({ onUpgrade }) {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-xl border border-primary/20 p-6 bg-gradient-to-br from-primary/10 to-primary/[0.03]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-white">{t('upgrade.title')}</span>
+          <span className="text-sm text-secondary-foreground">{t('upgrade.subtitle')}</span>
+        </div>
+        <button onClick={onUpgrade} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shrink-0">
+          <Zap className="w-4 h-4" />{t('upgrade.ctaButton')}
+        </button>
+      </div>
     </div>
   );
 }

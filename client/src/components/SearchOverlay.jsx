@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, X, Gamepad2 } from 'lucide-react';
+import { Search, Gamepad2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '../utils/formatters';
 
@@ -39,54 +39,61 @@ const SearchOverlay = ({ transactions, onSelect, onClose }) => {
     }, [query, transactions]);
 
     return (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} style={{ alignItems: 'flex-start', paddingTop: '12vh' }}>
-            <div className="search-overlay-panel">
-                {/* Search input */}
-                <div className="search-overlay-input-wrap">
-                    <Search size={20} style={{ color: 'var(--color-text-dim)', flexShrink: 0 }} />
+        <div
+            className="fixed inset-0 bg-[#0A0A0B]/80 z-50 flex items-start justify-center pt-[20vh]"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div className="w-full max-w-[560px] bg-[#141417] border border-[#1F1F23] rounded-xl shadow-2xl overflow-hidden">
+                {/* Search input row */}
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1F1F23]">
+                    <Search className="w-5 h-5 text-[#505058] flex-shrink-0" />
                     <input
                         ref={inputRef}
                         type="text"
                         value={query}
                         onChange={e => setQuery(e.target.value)}
                         placeholder={t('search.placeholder')}
-                        className="search-overlay-input"
+                        className="flex-1 bg-transparent text-sm text-white placeholder:text-[#505058] outline-none"
                     />
-                    <kbd className="search-overlay-kbd">ESC</kbd>
+                    <kbd className="text-xs text-[#505058] border border-[#1F1F23] rounded px-1.5 py-0.5 font-mono">ESC</kbd>
                 </div>
 
                 {/* Results */}
                 {query.length >= 2 && (
-                    <div className="search-overlay-results">
+                    <div className="max-h-[300px] overflow-y-auto">
                         {results.length === 0 ? (
-                            <div className="search-overlay-empty">
+                            <div className="px-4 py-8 text-center text-sm text-[#505058]">
                                 {t('search.noResults')}
                             </div>
                         ) : (
                             results.map(tx => (
                                 <button
                                     key={tx.id}
-                                    className="search-overlay-item"
+                                    className="w-full px-4 py-3 hover:bg-[#1F1F23]/50 cursor-pointer transition-colors flex items-center gap-3 text-left"
                                     onClick={() => { onSelect(tx); onClose(); }}
                                 >
                                     {tx.cover_url ? (
-                                        <img src={tx.cover_url} alt="" className="search-overlay-cover" />
+                                        <img
+                                            src={tx.cover_url}
+                                            alt=""
+                                            className="w-8 h-8 rounded object-cover flex-shrink-0"
+                                        />
                                     ) : (
-                                        <div className="search-overlay-cover-placeholder">
-                                            <Gamepad2 size={14} />
+                                        <div className="w-8 h-8 rounded bg-[#1F1F23] flex items-center justify-center flex-shrink-0">
+                                            <Gamepad2 className="w-4 h-4 text-[#505058]" />
                                         </div>
                                     )}
-                                    <div className="search-overlay-item-info">
-                                        <div className="search-overlay-item-title">{tx.title}</div>
-                                        <div className="search-overlay-item-meta">
-                                            <span className={`badge-type badge-type-${tx.type || 'game'}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm text-white truncate">{tx.title}</div>
+                                        <div className="text-xs text-[#505058] flex items-center gap-1.5 mt-0.5">
+                                            <span className="text-[#FF5C00]">
                                                 {TYPE_KEYS[tx.type] ? t(TYPE_KEYS[tx.type]) : tx.type}
                                             </span>
-                                            <span>{tx.platform}</span>
-                                            <span>{formatDate(tx.purchase_date, i18n.language)}</span>
+                                            {tx.platform && <><span>·</span><span>{tx.platform}</span></>}
+                                            {tx.purchase_date && <><span>·</span><span>{formatDate(tx.purchase_date, i18n.language)}</span></>}
                                         </div>
                                     </div>
-                                    <div className="search-overlay-item-price">
+                                    <div className="text-sm text-white font-mono flex-shrink-0">
                                         {parseFloat(tx.price || 0).toFixed(2)} {tx.currency || '€'}
                                     </div>
                                 </button>
@@ -96,7 +103,7 @@ const SearchOverlay = ({ transactions, onSelect, onClose }) => {
                 )}
 
                 {query.length < 2 && (
-                    <div className="search-overlay-hint">
+                    <div className="px-4 py-8 text-center text-sm text-[#505058]">
                         {t('search.hint')}
                     </div>
                 )}

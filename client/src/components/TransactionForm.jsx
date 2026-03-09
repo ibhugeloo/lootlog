@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Image as ImageIcon } from 'lucide-react';
+import { Search, ChevronDown, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const GENRES = [
@@ -137,56 +137,71 @@ const TransactionForm = ({ onAddTransaction, initialData = null, games = [] }) =
         }));
     };
 
+    const inputClass = "w-full px-3.5 py-2.5 bg-secondary border border-border rounded-lg text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors";
+    const labelClass = "text-sm font-medium text-secondary-foreground";
+    const formGroupClass = "flex flex-col gap-1.5";
+    const selectWrapClass = "relative";
+    const selectClass = `${inputClass} appearance-none pr-8`;
+
     return (
         <div>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 {/* Title */}
-                <div className="form-group">
-                    <label>{t('form.gameTitle')}</label>
-                    <div style={{ position: 'relative' }}>
-                        <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--color-text-dim)' }} />
+                <div className={formGroupClass}>
+                    <label className={labelClass}>{t('form.gameTitle')}</label>
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                         <input
                             type="text"
                             name="title"
                             value={formData.title}
                             onChange={handleChange}
                             placeholder={t('form.gameTitlePlaceholder')}
-                            style={{ paddingLeft: '36px' }}
+                            className={`${inputClass} pl-9`}
                             required
                         />
                     </div>
                     {/* Cover search results */}
                     {coverResults.length > 0 && (
-                        <div className="cover-search-results">
+                        <div className="flex gap-2 mt-2 flex-wrap">
                             {coverResults.map(g => g.image && (
                                 <img
                                     key={g.id}
                                     src={g.image}
                                     alt={g.name}
                                     title={g.name}
-                                    className={`cover-search-item ${formData.cover_url === g.image ? 'selected' : ''}`}
+                                    className={`w-12 h-16 rounded-md object-cover cursor-pointer border-2 transition-colors ${
+                                        formData.cover_url === g.image
+                                            ? 'border-primary'
+                                            : 'border-transparent hover:border-primary/50'
+                                    }`}
                                     onClick={() => selectCover(g.image)}
                                 />
                             ))}
                         </div>
                     )}
-                    {searchingCover && <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>{t('form.searchingCovers')}</p>}
+                    {searchingCover && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{t('form.searchingCovers')}</p>
+                    )}
                 </div>
 
                 {/* Type d'achat */}
-                <div className="form-group">
-                    <label>{t('form.purchaseType')}</label>
-                    <select name="type" value={formData.type} onChange={handleChange}>
-                        {TRANSACTION_TYPES.map(tx => (
-                            <option key={tx.value} value={tx.value}>{t(tx.labelKey)}</option>
-                        ))}
-                    </select>
+                <div className={formGroupClass}>
+                    <label className={labelClass}>{t('form.purchaseType')}</label>
+                    <div className={selectWrapClass}>
+                        <select name="type" value={formData.type} onChange={handleChange} className={selectClass}>
+                            {TRANSACTION_TYPES.map(tx => (
+                                <option key={tx.value} value={tx.value}>{t(tx.labelKey)}</option>
+                            ))}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                    </div>
                 </div>
 
                 {/* Parent Game — only for non-game types */}
                 {formData.type !== 'game' && (
-                    <div className="form-group">
-                        <label>{t('form.parentGame')}</label>
+                    <div className={formGroupClass}>
+                        <label className={labelClass}>{t('form.parentGame')}</label>
                         <input
                             type="text"
                             placeholder={t('form.searchGame')}
@@ -195,34 +210,41 @@ const TransactionForm = ({ onAddTransaction, initialData = null, games = [] }) =
                                 setParentSearch(e.target.value);
                                 if (!e.target.value) setFormData(prev => ({ ...prev, parent_game_id: null }));
                             }}
+                            className={inputClass}
                         />
                         {parentSearch.length > 0 && !formData.parent_game_id && filteredGames.length > 0 && (
-                            <div className="parent-game-results">
+                            <div className="mt-1 bg-secondary border border-border rounded-lg overflow-hidden">
                                 {filteredGames.map(g => (
                                     <button
                                         key={g.id}
                                         type="button"
-                                        className="parent-game-option"
+                                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-white hover:bg-muted transition-colors text-left"
                                         onClick={() => {
                                             setFormData(prev => ({ ...prev, parent_game_id: g.id }));
                                             setParentSearch(g.title);
                                         }}
                                     >
-                                        {g.cover_url && <img src={g.cover_url} alt="" className="parent-game-cover" />}
+                                        {g.cover_url && (
+                                            <img src={g.cover_url} alt="" className="w-6 h-8 rounded object-cover shrink-0" />
+                                        )}
                                         <span>{g.title}</span>
                                     </button>
                                 ))}
                             </div>
                         )}
                         {formData.parent_game_id && (
-                            <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span className="badge badge-type-game" style={{ fontSize: '0.8rem' }}>
+                            <div className="mt-1 flex items-center gap-2">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/15 text-primary">
                                     {parentSearch}
                                 </span>
-                                <button type="button" onClick={() => {
-                                    setFormData(prev => ({ ...prev, parent_game_id: null }));
-                                    setParentSearch('');
-                                }} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                <button
+                                    type="button"
+                                    className="text-xs text-destructive hover:text-destructive/80 transition-colors"
+                                    onClick={() => {
+                                        setFormData(prev => ({ ...prev, parent_game_id: null }));
+                                        setParentSearch('');
+                                    }}
+                                >
                                     {t('form.remove')}
                                 </button>
                             </div>
@@ -231,62 +253,74 @@ const TransactionForm = ({ onAddTransaction, initialData = null, games = [] }) =
                 )}
 
                 {/* Date */}
-                <div className="form-group">
-                    <label>{t('form.purchaseDate')}</label>
+                <div className={formGroupClass}>
+                    <label className={labelClass}>{t('form.purchaseDate')}</label>
                     <input
                         type="date"
                         name="purchase_date"
                         value={formData.purchase_date}
                         onChange={handleChange}
+                        className={inputClass}
                         required
                     />
                 </div>
 
                 {/* Platform + Status */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="form-group">
-                        <label>{t('form.platform')}</label>
-                        <select name="platform" value={formData.platform} onChange={handleChange}>
-                            <option value="PC">PC</option>
-                            <option value="Steam">Steam</option>
-                            <option value="PS5">PS5</option>
-                            <option value="PS4">PS4</option>
-                            <option value="Switch">Switch</option>
-                            <option value="Xbox Series">Xbox Series</option>
-                            <option value="Xbox One">Xbox One</option>
-                            <option value="Mobile">Mobile</option>
-                            <option value="Console">Console</option>
-                        </select>
+                <div className="grid grid-cols-2 gap-3">
+                    <div className={formGroupClass}>
+                        <label className={labelClass}>{t('form.platform')}</label>
+                        <div className={selectWrapClass}>
+                            <select name="platform" value={formData.platform} onChange={handleChange} className={selectClass}>
+                                <option value="PC">PC</option>
+                                <option value="Steam">Steam</option>
+                                <option value="PS5">PS5</option>
+                                <option value="PS4">PS4</option>
+                                <option value="Switch">Switch</option>
+                                <option value="Xbox Series">Xbox Series</option>
+                                <option value="Xbox One">Xbox One</option>
+                                <option value="Mobile">Mobile</option>
+                                <option value="Console">Console</option>
+                            </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label>{t('form.status')}</label>
-                        <select name="status" value={formData.status} onChange={handleChange}>
-                            {STATUS_OPTIONS.map(s => (
-                                <option key={s.value} value={s.value}>{t(s.labelKey)}</option>
-                            ))}
-                        </select>
+                    <div className={formGroupClass}>
+                        <label className={labelClass}>{t('form.status')}</label>
+                        <div className={selectWrapClass}>
+                            <select name="status" value={formData.status} onChange={handleChange} className={selectClass}>
+                                {STATUS_OPTIONS.map(s => (
+                                    <option key={s.value} value={s.value}>{t(s.labelKey)}</option>
+                                ))}
+                            </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
                     </div>
                 </div>
 
                 {/* Genre + Rating */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="form-group">
-                        <label>{t('form.genre')}</label>
-                        <select name="genre" value={formData.genre} onChange={handleChange}>
-                            {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-                        </select>
+                <div className="grid grid-cols-2 gap-3">
+                    <div className={formGroupClass}>
+                        <label className={labelClass}>{t('form.genre')}</label>
+                        <div className={selectWrapClass}>
+                            <select name="genre" value={formData.genre} onChange={handleChange} className={selectClass}>
+                                {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                            </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label>{t('form.ratingLabel', { value: formData.rating || '—' })}</label>
-                        <div className="rating-input">
+                    <div className={formGroupClass}>
+                        <label className={labelClass}>{t('form.ratingLabel', { value: formData.rating || '—' })}</label>
+                        <div className="flex gap-0.5 items-center pt-1">
                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                                 <button
                                     key={n}
                                     type="button"
                                     onClick={() => setRating(n)}
-                                    style={{ color: formData.rating >= n ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
+                                    className={`text-base leading-none transition-colors ${
+                                        formData.rating >= n ? 'text-primary' : 'text-muted-foreground hover:text-primary/60'
+                                    }`}
                                 >
                                     ★
                                 </button>
@@ -296,9 +330,9 @@ const TransactionForm = ({ onAddTransaction, initialData = null, games = [] }) =
                 </div>
 
                 {/* Price + Currency + Hours */}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: '1rem' }}>
-                    <div className="form-group">
-                        <label>{t('form.price')}</label>
+                <div className="grid grid-cols-[2fr_1fr_1.5fr] gap-3">
+                    <div className={formGroupClass}>
+                        <label className={labelClass}>{t('form.price')}</label>
                         <input
                             type="number"
                             name="price"
@@ -306,20 +340,24 @@ const TransactionForm = ({ onAddTransaction, initialData = null, games = [] }) =
                             onChange={handleChange}
                             placeholder="0.00"
                             step="0.01"
+                            className={`${inputClass} font-mono`}
                             required
                         />
                     </div>
-                    <div className="form-group">
-                        <label>{t('form.currency')}</label>
-                        <select name="currency" value={formData.currency} onChange={handleChange}>
-                            <option value="EUR">EUR</option>
-                            <option value="USD">USD</option>
-                            <option value="GBP">GBP</option>
-                            <option value="JPY">JPY</option>
-                        </select>
+                    <div className={formGroupClass}>
+                        <label className={labelClass}>{t('form.currency')}</label>
+                        <div className={selectWrapClass}>
+                            <select name="currency" value={formData.currency} onChange={handleChange} className={selectClass}>
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                                <option value="GBP">GBP</option>
+                                <option value="JPY">JPY</option>
+                            </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
                     </div>
-                    <div className="form-group">
-                        <label>{t('form.hoursPlayed')}</label>
+                    <div className={formGroupClass}>
+                        <label className={labelClass}>{t('form.hoursPlayed')}</label>
                         <input
                             type="number"
                             name="hours_played"
@@ -328,46 +366,57 @@ const TransactionForm = ({ onAddTransaction, initialData = null, games = [] }) =
                             placeholder="0"
                             step="0.5"
                             min="0"
+                            className={`${inputClass} font-mono`}
                         />
                     </div>
                 </div>
 
                 {/* Store */}
-                <div className="form-group">
-                    <label>{t('form.store')}</label>
+                <div className={formGroupClass}>
+                    <label className={labelClass}>{t('form.store')}</label>
                     <input
                         type="text"
                         name="store"
                         value={formData.store}
                         onChange={handleChange}
                         placeholder={t('form.storePlaceholder')}
+                        className={inputClass}
                     />
                 </div>
 
                 {/* Notes */}
-                <div className="form-group">
-                    <label>{t('form.notes')}</label>
+                <div className={formGroupClass}>
+                    <label className={labelClass}>{t('form.notes')}</label>
                     <textarea
                         name="notes"
                         value={formData.notes}
                         onChange={handleChange}
                         placeholder={t('form.notesPlaceholder')}
                         rows="2"
-                    ></textarea>
+                        className={`${inputClass} resize-none`}
+                    />
                 </div>
 
                 {/* Selected Cover Preview */}
                 {formData.cover_url && (
-                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <img src={formData.cover_url} alt="Cover" style={{ width: 60, height: 80, borderRadius: 8, objectFit: 'cover' }} />
-                        <button type="button" onClick={() => setFormData(prev => ({ ...prev, cover_url: null }))}
-                            style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer', fontSize: '0.85rem' }}>
+                    <div className="flex items-center gap-3">
+                        <img
+                            src={formData.cover_url}
+                            alt="Cover"
+                            className="w-[60px] h-[80px] rounded-lg object-cover"
+                        />
+                        <button
+                            type="button"
+                            className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors"
+                            onClick={() => setFormData(prev => ({ ...prev, cover_url: null }))}
+                        >
+                            <X size={14} />
                             {t('form.removeCover')}
                         </button>
                     </div>
                 )}
 
-                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+                <button type="submit" className="w-full py-3 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors mt-1">
                     {initialData ? t('form.saveChanges') : t('form.addTransaction')}
                 </button>
             </form>

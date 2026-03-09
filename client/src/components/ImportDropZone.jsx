@@ -55,26 +55,34 @@ const ImportDropZone = ({ onFileLoaded }) => {
   };
 
   return (
-    <div
-      className={`import-dropzone ${dragging ? 'dragging' : ''}`}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-      onClick={onClick}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".csv"
-        onChange={onInputChange}
-        style={{ display: 'none' }}
-      />
-      <Upload size={32} style={{ color: 'var(--color-primary)', marginBottom: '0.75rem' }} />
-      <p className="import-dropzone-title">{t('import.dropzoneDrag')}</p>
-      <p className="import-dropzone-or">{t('import.dropzoneOr')}</p>
-      <span className="import-dropzone-browse">{t('import.dropzoneBrowse')}</span>
-      <p className="import-dropzone-hint">{t('import.dropzoneHint')}</p>
-      {error && <p className="import-dropzone-error">{error}</p>}
+    <div className="flex flex-col gap-2">
+      <div
+        className={`flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+          dragging
+            ? 'border-[#FF5C00] bg-[#FF5C00]/5'
+            : 'border-[#1F1F23] hover:border-[#2A2A2F]'
+        }`}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        onClick={onClick}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv"
+          onChange={onInputChange}
+          className="hidden"
+        />
+        <Upload className="w-8 h-8 text-[#505058]" />
+        <p className="text-sm text-[#505058]">{t('import.dropzoneDrag')}</p>
+        <p className="text-xs text-[#505058]">{t('import.dropzoneOr')}</p>
+        <span className="text-sm text-[#FF5C00] font-medium">{t('import.dropzoneBrowse')}</span>
+        <p className="text-xs text-[#505058]">{t('import.dropzoneHint')}</p>
+      </div>
+      {error && (
+        <p className="text-xs text-red-400 text-center">{error}</p>
+      )}
     </div>
   );
 };

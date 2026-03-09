@@ -20,37 +20,65 @@ const BudgetWidget = ({ budget, transactions, exchangeRate = 0.92 }) => {
     const remaining = budgetAmount - spent;
     const overBudget = spent > budgetAmount;
 
-    let barClass = '';
-    if (pct >= 100) barClass = 'danger';
-    else if (pct >= 80) barClass = 'warning';
+    const barColor = pct >= 100
+        ? 'bg-red-500'
+        : pct >= 80
+        ? 'bg-amber-500'
+        : 'bg-[#FF5C00]';
 
     const monthName = formatMonth(now, i18n.language);
 
     return (
-        <div className="budget-widget">
-            <div className="budget-info">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <Wallet size={18} style={{ color: 'var(--color-primary)' }} />
-                    <span style={{ fontWeight: 600, fontSize: '1rem' }}>{t('budget.budgetFor', { month: monthName })}</span>
-                </div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 700, color: overBudget ? 'var(--color-error)' : 'var(--color-text)' }}>
-                    {spent.toFixed(2)} € <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'var(--color-text-dim)' }}>/ {budgetAmount.toFixed(2)} €</span>
-                </div>
-                {overBudget && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--color-error)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                        <AlertTriangle size={14} />
-                        {t('budget.overBudget', { amount: Math.abs(remaining).toFixed(2) })}
-                    </div>
-                )}
+        <div className="bg-[#141417] border border-[#1F1F23] rounded-xl px-6 py-5">
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-1">
+                <Wallet className="w-4 h-4 text-[#FF5C00]" />
+                <span className="text-xs text-[#A0A0A8] tracking-wide">
+                    {t('budget.budgetFor', { month: monthName })}
+                </span>
             </div>
 
-            <div className="budget-bar-container">
-                <div className="budget-bar-bg">
-                    <div className={`budget-bar-fill ${barClass}`} style={{ width: `${pct}%` }} />
+            {/* Amounts */}
+            <div className="flex items-baseline gap-2 mb-1">
+                <span className={`font-mono text-2xl font-bold ${overBudget ? 'text-red-400' : 'text-white'}`}>
+                    {spent.toFixed(2)} €
+                </span>
+                <span className="font-mono text-sm text-[#505058]">/ {budgetAmount.toFixed(2)} €</span>
+            </div>
+
+            {overBudget && (
+                <div className="flex items-center gap-1.5 text-xs text-red-400 mb-3">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {t('budget.overBudget', { amount: Math.abs(remaining).toFixed(2) })}
                 </div>
-                <div className="budget-labels">
-                    <span>{t('budget.used', { percent: pct.toFixed(0) })}</span>
-                    <span>{remaining > 0 ? t('budget.remaining', { amount: remaining.toFixed(2) }) : t('budget.exhausted')}</span>
+            )}
+
+            {/* Progress bar */}
+            <div className="flex flex-col gap-1.5 mt-3">
+                <div className="w-full h-2 bg-[#1F1F23] rounded-full overflow-hidden">
+                    <div
+                        className={`h-full rounded-full transition-all ${barColor}`}
+                        style={{ width: `${pct}%` }}
+                    />
+                </div>
+                <div className="flex items-center justify-between">
+                    <span className="text-xs text-[#505058]">{t('budget.used', { percent: pct.toFixed(0) })}</span>
+                    {pct >= 80 && !overBudget && (
+                        <span className="text-xs text-amber-400">
+                            {t('budget.remaining', { amount: remaining.toFixed(2) })}
+                        </span>
+                    )}
+                    {!overBudget && pct < 80 && (
+                        <span className="text-xs text-[#505058]">
+                            {remaining > 0
+                                ? t('budget.remaining', { amount: remaining.toFixed(2) })
+                                : t('budget.exhausted')
+                            }
+                        </span>
+                    )}
+                    {overBudget && (
+                        <span className="text-xs text-red-400">{t('budget.exhausted')}</span>
+                    )}
                 </div>
             </div>
         </div>

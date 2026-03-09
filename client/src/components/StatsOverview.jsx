@@ -79,7 +79,7 @@ const StatsOverview = ({ transactions, exchangeRate = 0.92 }) => {
     ];
 
     return (
-        <div className="stats-grid">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {cards.map((card, index) => {
                 const IconComponent = card.icon;
                 const isPositive = card.trend > 0;
@@ -88,23 +88,33 @@ const StatsOverview = ({ transactions, exchangeRate = 0.92 }) => {
                 const hasTrend = card.trend !== null;
 
                 return (
-                    <div key={index} className="stat-card">
-                        <div className="stat-card-header">
-                            <span className="stat-card-title">
-                                <IconComponent size={16} />
-                                {card.label}
-                            </span>
-                        </div>
-                        <div className="stat-card-value">{card.value}</div>
+                    <div key={index} className="bg-card border border-border rounded-xl px-6 py-5 flex flex-col gap-2">
+                        <span className="text-xs text-secondary-foreground tracking-wide flex items-center gap-1.5">
+                            <IconComponent size={14} />
+                            {card.label}
+                        </span>
+                        <div className="font-mono text-[28px] text-white leading-tight">{card.value}</div>
                         {hasTrend && (
-                            <div style={{ display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
-                                <div className={`stat-card-trend-pill ${isPositive ? 'positive' : isNegative ? 'negative' : 'neutral'}`}>
-                                    {isPositive && <TrendingUp size={14} />}
-                                    {isNegative && <TrendingDown size={14} />}
-                                    {isNeutral && <Minus size={14} />}
-                                    {isPositive ? '+' : ''}{card.trend}%
-                                </div>
-                                <span className="stat-card-trend-label">{t('stats.vsLastMonth')}</span>
+                            <div className="flex items-center gap-2 mt-auto">
+                                {isPositive && (
+                                    <span className="flex items-center gap-1 text-xs text-green-500">
+                                        <TrendingUp size={14} />
+                                        +{card.trend}%
+                                    </span>
+                                )}
+                                {isNegative && (
+                                    <span className="flex items-center gap-1 text-xs text-red-500">
+                                        <TrendingDown size={14} />
+                                        {card.trend}%
+                                    </span>
+                                )}
+                                {isNeutral && (
+                                    <span className="flex items-center gap-1 text-xs text-secondary-foreground">
+                                        <Minus size={14} />
+                                        0%
+                                    </span>
+                                )}
+                                <span className="text-xs text-secondary-foreground">{t('stats.vsLastMonth')}</span>
                             </div>
                         )}
                     </div>
