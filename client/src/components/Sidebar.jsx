@@ -1,5 +1,5 @@
 import { useLocation, NavLink } from 'react-router-dom';
-import { Gamepad2, LayoutDashboard, CreditCard, ChartLine, Heart, Settings, Menu, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, CreditCard, ChartLine, Wallet, Heart, RefreshCw, Settings, Menu, X, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 
@@ -7,11 +7,13 @@ const navItems = [
     { labelKey: 'nav.dashboard', icon: LayoutDashboard, href: '/dashboard' },
     { labelKey: 'nav.transactions', icon: CreditCard, href: '/transactions' },
     { labelKey: 'nav.analytics', icon: ChartLine, href: '/analytics' },
+    { labelKey: 'nav.budget', icon: Wallet, href: '/budget' },
     { labelKey: 'nav.wishlist', icon: Heart, href: '/wishlist' },
+    { labelKey: 'nav.subscriptions', icon: RefreshCw, href: '/subscriptions' },
     { labelKey: 'nav.settings', icon: Settings, href: '/settings' },
 ];
 
-const Sidebar = ({ isPremium, profile, onSignOut }) => {
+const Sidebar = ({ isPremium, profile, onSignOut, onUpgrade }) => {
     const { t } = useTranslation();
     const location = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -20,9 +22,7 @@ const Sidebar = ({ isPremium, profile, onSignOut }) => {
         <>
             {/* Header */}
             <div className="p-5 flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                    <Gamepad2 className="w-[18px] h-[18px] text-white" />
-                </div>
+                <img src="/logo.png" alt="LootLog" className="w-8 h-8 object-contain" />
                 <span className="font-mono text-sm font-semibold tracking-[3px] text-white">
                     LOOTLOG
                 </span>
@@ -56,28 +56,44 @@ const Sidebar = ({ isPremium, profile, onSignOut }) => {
             </nav>
 
             {/* Footer */}
-            <div className="p-4 border-t border-border">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm">
-                        {profile?.avatar || '🎮'}
+            <div className="mt-auto">
+                {!isPremium && onUpgrade && (
+                    <div className="px-3 pb-3">
+                        <div className="rounded-xl bg-[#1A1510] border border-primary/20 p-4">
+                            <p className="text-sm font-semibold text-white mb-0.5">{t('common.freePlan')}</p>
+                            <p className="text-[11px] text-muted-foreground mb-3">{t('upgrade.subtitle')}</p>
+                            <button
+                                onClick={onUpgrade}
+                                className="w-full py-2 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors"
+                            >
+                                {t('upgrade.ctaButton')}
+                            </button>
+                        </div>
                     </div>
-                    <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-[13px] font-medium text-white truncate">
-                            {profile?.display_name || 'Player'}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                            {isPremium ? 'Premium' : t('common.freePlan')}
-                        </span>
+                )}
+                <div className="p-4 border-t border-border">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm">
+                            {profile?.avatar || '🎮'}
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-[13px] font-medium text-white truncate">
+                                {profile?.display_name || 'Player'}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                                {isPremium ? 'Premium' : t('common.freePlan')}
+                            </span>
+                        </div>
+                        {onSignOut && (
+                            <button
+                                onClick={onSignOut}
+                                className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-muted transition-colors"
+                                title={t('settings.signOut')}
+                            >
+                                <LogOut className="w-3.5 h-3.5" />
+                            </button>
+                        )}
                     </div>
-                    {onSignOut && (
-                        <button
-                            onClick={onSignOut}
-                            className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-muted transition-colors"
-                            title={t('settings.signOut')}
-                        >
-                            <LogOut className="w-3.5 h-3.5" />
-                        </button>
-                    )}
                 </div>
             </div>
         </>

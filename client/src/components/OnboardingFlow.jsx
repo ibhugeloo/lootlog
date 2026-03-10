@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Gamepad2, ArrowRight, ArrowLeft, Check, BarChart3, Wallet, Target, Globe } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, BarChart3, Wallet, Target, Globe, Gamepad2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AVATAR_OPTIONS } from '../constants/avatars';
 import { trackEvent } from '../posthog';
@@ -52,7 +52,7 @@ const OnboardingFlow = ({ profile, onComplete }) => {
             <div className="w-full max-w-[520px]">
                 {/* Brand */}
                 <div className="flex items-center gap-2 mb-10">
-                    <Gamepad2 className="w-5 h-5 text-[#FF5C00]" />
+                    <img src="/logo.png" alt="LootLog" className="w-6 h-6 object-contain" />
                     <span className="font-mono text-sm font-bold tracking-widest text-white uppercase">LOOTLOG</span>
                 </div>
 

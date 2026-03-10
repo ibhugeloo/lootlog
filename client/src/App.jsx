@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, X, Search, Bell, Download, Upload, Zap } from 'lucide-react';
+import { Plus, X, Search, Bell, Download, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
@@ -8,6 +8,7 @@ import { usePlan } from './hooks/usePlan';
 import { useProfile } from './hooks/useProfile';
 import { useTransactions } from './hooks/useTransactions';
 import { useBudget } from './hooks/useBudget';
+import { useSubscriptions } from './hooks/useSubscriptions';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import OnboardingFlow from './components/OnboardingFlow';
@@ -19,9 +20,11 @@ import StatsOverview from './components/StatsOverview';
 import AnalyticsCharts from './components/AnalyticsCharts';
 import BudgetWidget from './components/BudgetWidget';
 import BudgetForm from './components/BudgetForm';
+import BudgetPage from './components/BudgetPage';
 import SearchOverlay from './components/SearchOverlay';
 import NotificationDropdown from './components/NotificationDropdown';
 import WishlistView from './components/WishlistView';
+import SubscriptionsPage from './components/SubscriptionsPage';
 import Toast from './components/Toast';
 import ImportModal from './components/ImportModal';
 import OfflineBanner from './components/OfflineBanner';
@@ -36,7 +39,8 @@ function App() {
   const { isPremium, limits, canAddTransaction, createCheckoutSession, checkoutLoading, refreshPlan } = usePlan(user?.id);
   const { profile, loading: profileLoading, updateProfile, completeOnboarding } = useProfile(user?.id);
   const { transactions, loading, fetchTransactions, saveTransaction, deleteTransaction } = useTransactions(user?.id);
-  const { budget, fetchBudget, saveBudget } = useBudget(user?.id);
+  const { budget, allBudgets, fetchBudget, fetchAllBudgets, saveBudget } = useBudget(user?.id);
+  const { subscriptions: gamingSubs, loading: subsLoading, fetchSubscriptions, saveSubscription, deleteSubscription } = useSubscriptions(user?.id);
 
   const [showForm, setShowForm] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
@@ -97,7 +101,9 @@ function App() {
   useEffect(() => {
     fetchTransactions();
     fetchBudget();
-  }, [fetchTransactions, fetchBudget]);
+    fetchAllBudgets();
+    fetchSubscriptions();
+  }, [fetchTransactions, fetchBudget, fetchAllBudgets, fetchSubscriptions]);
 
   const gamesList = useMemo(() => {
     return transactions.filter(tx => tx.type === 'game' || !tx.type);
@@ -107,9 +113,23 @@ function App() {
     return transactions.filter(tx => tx.status === 'Wishlist');
   }, [transactions]);
 
+  const activeTransactions = useMemo(() => {
+    return transactions.filter(tx => tx.status !== 'Wishlist');
+  }, [transactions]);
+
   const handleStatusChange = async (id, newStatus) => {
     try {
       await supabase.from('transactions').update({ status: newStatus }).eq('id', id);
+      await fetchTransactions();
+    } catch (err) {
+      console.error(err);
+      showToast(t('errors.generic', { message: err.message }));
+    }
+  };
+
+  const handleUpdateTransaction = async (id, updates) => {
+    try {
+      await supabase.from('transactions').update(updates).eq('id', id);
       await fetchTransactions();
     } catch (err) {
       console.error(err);
@@ -141,6 +161,27 @@ function App() {
     } catch (err) {
       console.error(err);
       showToast(t('errors.budgetError', { message: err.message }));
+    }
+  };
+
+  const handleSaveSubscription = async (subscription, editingId = null) => {
+    try {
+      await saveSubscription(subscription, editingId);
+      trackEvent(editingId ? 'subscription_edited' : 'subscription_added', { service: subscription.service_name });
+    } catch (err) {
+      console.error(err);
+      showToast(t('errors.generic', { message: err.message }));
+    }
+  };
+
+  const handleDeleteSubscription = async (id) => {
+    if (!window.confirm(t('subscriptions.confirmDelete'))) return;
+    try {
+      await deleteSubscription(id);
+      trackEvent('subscription_deleted');
+    } catch (err) {
+      console.error(err);
+      showToast(t('errors.generic', { message: err.message }));
     }
   };
 
@@ -198,9 +239,6 @@ function App() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="font-serif text-2xl font-semibold text-white">{t('nav.dashboard')}</h1>
-          {!isPremium && (
-            <span className="bg-secondary text-secondary-foreground text-xs font-medium rounded-full px-3 py-1">{t('common.freePlan')}</span>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowSearch(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('common.search')}>
@@ -211,21 +249,19 @@ function App() {
               <Bell className="w-4 h-4" />
               {isPremium && budget && (() => {
                 const now = new Date();
-                const monthSpent = transactions
+                const monthSpent = activeTransactions
                   .filter(tx => { const d = new Date(tx.purchase_date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
                   .reduce((sum, tx) => sum + (parseFloat(tx.price) || 0), 0);
                 return monthSpent / budget.amount >= 0.8 ? <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" /> : null;
               })()}
             </button>
             {showNotifications && (
-              <NotificationDropdown transactions={transactions} budget={budget} exchangeRate={exchangeRate} onClose={() => setShowNotifications(false)} />
+              <NotificationDropdown transactions={activeTransactions} budget={budget} exchangeRate={exchangeRate} onClose={() => setShowNotifications(false)} />
             )}
           </div>
-          {isPremium && (
-            <button onClick={() => { exportTransactionsCsv(transactions); trackEvent('csv_exported', { count: transactions.length }); }} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.exportCsv')}>
-              <Download className="w-4 h-4" />
-            </button>
-          )}
+          <button onClick={() => { exportTransactionsCsv(activeTransactions); trackEvent('csv_exported', { count: activeTransactions.length }); }} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.exportCsv')}>
+            <Download className="w-4 h-4" />
+          </button>
           <button onClick={() => setShowImport(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.import')}>
             <Upload className="w-4 h-4" />
           </button>
@@ -240,8 +276,18 @@ function App() {
         <><SkeletonStats /><SkeletonChart /><SkeletonTable /></>
       ) : (
         <>
-          <StatsOverview transactions={transactions} exchangeRate={exchangeRate} />
-          {isPremium && budget && <BudgetWidget budget={budget} transactions={transactions} exchangeRate={exchangeRate} />}
+          <StatsOverview transactions={activeTransactions} exchangeRate={exchangeRate} />
+          {isPremium && (
+            <div className="cursor-pointer" onClick={() => setShowBudgetModal(true)}>
+              {budget ? (
+                <BudgetWidget budget={budget} transactions={activeTransactions} exchangeRate={exchangeRate} />
+              ) : (
+                <button className="w-full py-4 border border-dashed border-border rounded-xl text-sm text-muted-foreground hover:text-white hover:border-border-light transition-colors">
+                  + {t('header.setBudget')}
+                </button>
+              )}
+            </div>
+          )}
 
           <div className="bg-card border border-border rounded-xl flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -258,11 +304,11 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.slice(0, 6).map((tx) => (
+                {activeTransactions.slice(0, 6).map((tx) => (
                   <tr key={tx.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => openEditModal(tx)}>
                     <td className="px-6 py-3.5">
                       <div className="flex items-center gap-3">
-                        {tx.cover_url ? <img src={tx.cover_url} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" /> : <div className="w-8 h-8 rounded-md shrink-0 bg-primary/20" />}
+                        {tx.cover_url ? <img src={tx.cover_url} alt="" className="w-10 h-10 rounded-lg object-contain shrink-0" /> : <div className="w-10 h-10 rounded-lg shrink-0 bg-primary/20" />}
                         <span className="text-sm text-white font-medium truncate">{tx.title}</span>
                       </div>
                     </td>
@@ -275,7 +321,6 @@ function App() {
             </table>
           </div>
 
-          {!isPremium && <UpgradeBanner onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }} />}
         </>
       )}
     </div>
@@ -286,7 +331,6 @@ function App() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="font-serif text-2xl text-white">{t('nav.transactions')}</h1>
-          {!isPremium && <span className="bg-secondary text-secondary-foreground text-xs font-medium rounded-full px-3 py-1">{t('common.freePlan')}</span>}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2.5 border border-border text-secondary-foreground hover:text-white text-sm font-medium rounded-lg transition-colors">
@@ -297,19 +341,18 @@ function App() {
           </button>
         </div>
       </div>
-      {!isPremium && transactions.length >= 40 && (
+      {!isPremium && activeTransactions.length >= 40 && (
         <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-amber-400">{t('transactions.filteredExpenses')}</span>
-            <span className="text-xs text-muted-foreground">{transactions.length}/50 {t('transactions.transactions')}</span>
+            <span className="text-xs text-muted-foreground">{activeTransactions.length}/50 {t('transactions.transactions')}</span>
           </div>
           <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${(transactions.length / 50) * 100}%` }} />
+            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${(activeTransactions.length / 50) * 100}%` }} />
           </div>
         </div>
       )}
-      <TransactionList transactions={transactions} onDelete={handleDelete} onEdit={openEditModal} exchangeRate={exchangeRate} isPremium={isPremium} />
-      {!isPremium && <UpgradeBanner onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }} />}
+      <TransactionList transactions={activeTransactions} onDelete={handleDelete} onEdit={openEditModal} exchangeRate={exchangeRate} isPremium={isPremium} />
     </div>
   );
 
@@ -317,15 +360,27 @@ function App() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center gap-3">
         <h1 className="font-serif text-2xl font-semibold text-white">{t('nav.analytics')}</h1>
-        {!isPremium && <span className="bg-secondary text-secondary-foreground text-xs font-medium rounded-full px-3 py-1">{t('common.freePlan')}</span>}
       </div>
-      {loading ? <SkeletonChart /> : <AnalyticsCharts transactions={transactions} exchangeRate={exchangeRate} isPremium={isPremium} />}
-      {!isPremium && <UpgradeBanner onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }} />}
+      {loading ? <SkeletonChart /> : <AnalyticsCharts transactions={activeTransactions} exchangeRate={exchangeRate} isPremium={isPremium} />}
     </div>
   );
 
+  const BudgetContent = () => (
+    <BudgetPage budget={budget} allBudgets={allBudgets} transactions={activeTransactions} exchangeRate={exchangeRate} onSetBudget={() => setShowBudgetModal(true)} />
+  );
+
   const WishlistContent = () => (
-    <WishlistView transactions={wishlistTransactions} onEdit={openEditModal} onDelete={handleDelete} onStatusChange={handleStatusChange} onAdd={openAddModal} exchangeRate={exchangeRate} />
+    <WishlistView transactions={wishlistTransactions} onEdit={openEditModal} onDelete={handleDelete} onStatusChange={handleStatusChange} onSave={handleSaveTransaction} onUpdate={handleUpdateTransaction} exchangeRate={exchangeRate} />
+  );
+
+  const SubscriptionsContent = () => (
+    <SubscriptionsPage
+      subscriptions={gamingSubs}
+      loading={subsLoading}
+      onSave={handleSaveSubscription}
+      onDelete={handleDeleteSubscription}
+      exchangeRate={exchangeRate}
+    />
   );
 
   const SettingsContent = () => (
@@ -333,7 +388,7 @@ function App() {
       profile={profile} updateProfile={updateProfile} isPremium={isPremium} plan={isPremium ? 'premium' : 'free'}
       userEmail={user?.email} onSignOut={signOut} onDeleteAccount={deleteAccount}
       onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }}
-      budget={budget} transactions={transactions} exchangeRate={exchangeRate} onSaveBudget={handleSaveBudget}
+      budget={budget} transactions={activeTransactions} exchangeRate={exchangeRate} onSaveBudget={handleSaveBudget}
       onCancelSubscription={async () => {
         try {
           await supabase.from('subscriptions').update({ plan: 'free' }).eq('user_id', user.id);
@@ -348,14 +403,16 @@ function App() {
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar isPremium={isPremium} profile={profile} onSignOut={signOut} />
+      <Sidebar isPremium={isPremium} profile={profile} onSignOut={signOut} onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }} />
 
       <main className="flex-1 overflow-auto p-6 lg:p-8 xl:p-10 pl-16 lg:pl-8 xl:pl-10">
         <Routes>
           <Route path="/dashboard" element={<DashboardContent />} />
           <Route path="/transactions" element={<TransactionsContent />} />
           <Route path="/analytics" element={<AnalyticsContent />} />
+          <Route path="/budget" element={<BudgetContent />} />
           <Route path="/wishlist" element={<WishlistContent />} />
+          <Route path="/subscriptions" element={<SubscriptionsContent />} />
           <Route path="/settings" element={<SettingsContent />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
@@ -391,7 +448,7 @@ function App() {
 
       {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} onCheckout={createCheckoutSession} checkoutLoading={checkoutLoading} />}
       {showImport && <ImportModal onClose={() => { setShowImport(false); fetchTransactions(); }} userId={user.id} />}
-      {showSearch && <SearchOverlay transactions={transactions} onSelect={openEditModal} onClose={() => setShowSearch(false)} />}
+      {showSearch && <SearchOverlay transactions={activeTransactions} onSelect={openEditModal} onClose={() => setShowSearch(false)} />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <OfflineBanner />
     </div>
@@ -405,23 +462,6 @@ function NavLinkButton({ to }) {
     <button onClick={() => navigate(to)} className="flex items-center gap-1.5 text-sm text-primary hover:text-accent transition-colors">
       {t('header.viewAll')}<span className="text-xs">&rarr;</span>
     </button>
-  );
-}
-
-function UpgradeBanner({ onUpgrade }) {
-  const { t } = useTranslation();
-  return (
-    <div className="rounded-xl border border-primary/20 p-6 bg-gradient-to-br from-primary/10 to-primary/[0.03]">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-semibold text-white">{t('upgrade.title')}</span>
-          <span className="text-sm text-secondary-foreground">{t('upgrade.subtitle')}</span>
-        </div>
-        <button onClick={onUpgrade} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shrink-0">
-          <Zap className="w-4 h-4" />{t('upgrade.ctaButton')}
-        </button>
-      </div>
-    </div>
   );
 }
 

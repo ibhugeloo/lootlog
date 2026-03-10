@@ -10,7 +10,7 @@ const PRICE_IDS = {
 const FEATURES = [
     { nameKey: 'upgrade.features.transactions', freeKey: 'upgrade.features.transactionsFree', premiumKey: 'upgrade.features.transactionsPremium', key: 'txn' },
     { nameKey: 'upgrade.features.currencies', freeKey: 'upgrade.features.currenciesFree', premiumKey: 'upgrade.features.currenciesPremium', key: 'currency' },
-    { nameKey: 'upgrade.features.csvExport', free: false, premium: true, key: 'csv' },
+    { nameKey: 'upgrade.features.csvExport', free: true, premium: true, key: 'csv' },
     { nameKey: 'upgrade.features.monthlyBudget', free: false, premium: true, key: 'budget' },
     { nameKey: 'upgrade.features.rawgCovers', free: false, premium: true, key: 'rawg' },
     { nameKey: 'upgrade.features.advancedCharts', free: false, premium: true, key: 'charts' },
@@ -63,7 +63,7 @@ const UpgradeModal = ({ onClose, onCheckout, checkoutLoading }) => {
                         }`}
                     >
                         <div className={`text-2xl font-extrabold font-mono ${selectedPlan === 'monthly' ? 'text-primary' : 'text-white'}`}>
-                            3,99€
+                            2,99€
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5">{t('upgrade.monthly')}</div>
                     </button>

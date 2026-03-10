@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     cover_url TEXT DEFAULT NULL,
     type TEXT DEFAULT 'game',
     parent_game_id UUID REFERENCES transactions(id) ON DELETE SET NULL,
+    priority TEXT DEFAULT NULL,
+    target_price NUMERIC(10, 2) DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -79,6 +81,30 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Gaming Subscriptions (abonnements gaming récurrents)
+CREATE TABLE IF NOT EXISTS gaming_subscriptions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) NOT NULL,
+    service_name TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'gaming',
+    platform TEXT NOT NULL DEFAULT 'PC',
+    price NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    currency TEXT NOT NULL DEFAULT 'EUR',
+    billing_cycle TEXT NOT NULL DEFAULT 'monthly',
+    payment_method TEXT DEFAULT NULL,
+    start_date DATE DEFAULT CURRENT_DATE,
+    next_renewal DATE DEFAULT NULL,
+    auto_renewal BOOLEAN DEFAULT TRUE,
+    status TEXT NOT NULL DEFAULT 'active',
+    notes TEXT DEFAULT '',
+    renewal_reminders BOOLEAN DEFAULT FALSE,
+    tags TEXT[] DEFAULT '{}',
+    color TEXT DEFAULT '#FF5C00',
+    icon_url TEXT DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ========================
 -- 3. INDEXES
 -- ========================
@@ -99,10 +125,15 @@ CREATE INDEX IF NOT EXISTS idx_budgets_month_year ON budgets(month, year);
 -- Profiles
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
 
--- Subscriptions
+-- Subscriptions (Stripe)
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_customer_id ON subscriptions(stripe_customer_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_subscription_id ON subscriptions(stripe_subscription_id);
+
+-- Gaming Subscriptions
+CREATE INDEX IF NOT EXISTS idx_gaming_subscriptions_user_id ON gaming_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_gaming_subscriptions_status ON gaming_subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_gaming_subscriptions_next_renewal ON gaming_subscriptions(next_renewal);
 
 -- ========================
 -- 4. TRIGGERS (auto updated_at)
@@ -124,6 +155,10 @@ CREATE TRIGGER update_subscriptions_updated_at
     BEFORE UPDATE ON subscriptions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_gaming_subscriptions_updated_at
+    BEFORE UPDATE ON gaming_subscriptions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- ========================
 -- 5. ROW LEVEL SECURITY
 -- ========================
@@ -132,6 +167,7 @@ ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE budgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gaming_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- Transactions
 CREATE POLICY "Users can view own transactions"
@@ -196,3 +232,21 @@ CREATE POLICY "Users can update own subscription"
     ON subscriptions FOR UPDATE
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
+
+-- Gaming Subscriptions
+CREATE POLICY "Users can view own gaming subscriptions"
+    ON gaming_subscriptions FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own gaming subscriptions"
+    ON gaming_subscriptions FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own gaming subscriptions"
+    ON gaming_subscriptions FOR UPDATE
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own gaming subscriptions"
+    ON gaming_subscriptions FOR DELETE
+    USING (auth.uid() = user_id);

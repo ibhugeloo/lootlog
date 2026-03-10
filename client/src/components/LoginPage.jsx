@@ -1,5 +1,4 @@
 import React from 'react';
-import { Gamepad2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import AuthForm from './AuthForm';
@@ -14,9 +13,7 @@ const LoginPage = ({ signIn, signUp, resetPassword }) => {
             <div className="hidden w-[620px] shrink-0 flex-col justify-between border-r border-border bg-card p-12 lg:flex">
                 {/* Logo */}
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                        <Gamepad2 size={18} color="white" />
-                    </div>
+                    <img src="/logo.png" alt="LootLog" className="h-8 w-8 object-contain" />
                     <span className="font-mono text-sm font-semibold tracking-widest text-white uppercase">
                         LOOTLOG
                     </span>
@@ -57,9 +54,7 @@ const LoginPage = ({ signIn, signUp, resetPassword }) => {
             <div className="flex flex-1 flex-col items-center justify-center bg-background px-6 py-12">
                 {/* Mobile logo (shown on small screens only) */}
                 <div className="mb-8 flex items-center gap-2 lg:hidden">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                        <Gamepad2 size={18} color="white" />
-                    </div>
+                    <img src="/logo.png" alt="LootLog" className="h-8 w-8 object-contain" />
                     <span className="font-mono text-sm font-semibold tracking-widest text-white uppercase">
                         LOOTLOG
                     </span>

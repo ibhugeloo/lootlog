@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 
 export function useBudget(userId) {
     const [budget, setBudget] = useState(null);
+    const [allBudgets, setAllBudgets] = useState([]);
 
     const fetchBudget = useCallback(async () => {
         if (!userId) return;
@@ -24,6 +25,24 @@ export function useBudget(userId) {
         }
     }, [userId]);
 
+    const fetchAllBudgets = useCallback(async () => {
+        if (!userId) return;
+        try {
+            const { data, error } = await supabase
+                .from('budgets')
+                .select('*')
+                .eq('user_id', userId)
+                .order('year', { ascending: false })
+                .order('month', { ascending: false });
+
+            if (data && !error) {
+                setAllBudgets(data);
+            }
+        } catch {
+            // ignore
+        }
+    }, [userId]);
+
     const saveBudget = async (amount) => {
         const now = new Date();
         const budgetData = {
@@ -42,7 +61,8 @@ export function useBudget(userId) {
 
         if (error) throw error;
         setBudget(data);
+        await fetchAllBudgets();
     };
 
-    return { budget, fetchBudget, saveBudget };
+    return { budget, allBudgets, fetchBudget, fetchAllBudgets, saveBudget };
 }

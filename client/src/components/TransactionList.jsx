@@ -366,9 +366,6 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                             <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('price')}>
                                 {t('transactions.price')}{getSortIndicator('price')}
                             </th>
-                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('rating')}>
-                                {t('transactions.rating')}{getSortIndicator('rating')}
-                            </th>
                             <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('status')}>
                                 {t('transactions.status')}{getSortIndicator('status')}
                             </th>
@@ -395,11 +392,11 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                                                 <img
                                                     src={tx.cover_url}
                                                     alt={tx.title}
-                                                    className="w-8 h-10 rounded object-cover shrink-0"
+                                                    className="w-16 h-16 rounded-lg object-contain shrink-0"
                                                 />
                                             ) : (
-                                                <div className="w-8 h-10 rounded bg-muted flex items-center justify-center shrink-0">
-                                                    <Gamepad2 size={14} className="text-primary opacity-60" />
+                                                <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                                                    <Gamepad2 size={24} className="text-primary opacity-60" />
                                                 </div>
                                             )}
                                             <div>
@@ -419,16 +416,6 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                                         <span className="font-mono text-white text-sm">
                                             {parseFloat(tx.price).toFixed(2)} {tx.currency}
                                         </span>
-                                    </td>
-                                    <td className="px-5 py-3.5">
-                                        {tx.rating ? (
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-primary text-sm">{'★'.repeat(Math.min(tx.rating, 5))}</span>
-                                                <span className="text-xs text-muted-foreground">{tx.rating}/10</span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-muted-foreground">—</span>
-                                        )}
                                     </td>
                                     <td className="px-5 py-3.5">
                                         {(tx.type && tx.type !== 'game') ? (
