@@ -48,9 +48,13 @@ export function useAuth() {
 
         await supabase.from('transactions').delete().eq('user_id', uid);
         await supabase.from('budgets').delete().eq('user_id', uid);
+        await supabase.from('gaming_subscriptions').delete().eq('user_id', uid);
         await supabase.from('subscriptions').delete().eq('user_id', uid);
-        await supabase.from('profiles').delete().eq('id', uid);
-        await supabase.rpc('delete_user');
+        await supabase.from('profiles').delete().eq('user_id', uid);
+
+        const { error: rpcError } = await supabase.rpc('delete_user');
+        if (rpcError) throw rpcError;
+
         await supabase.auth.signOut();
     };
 
