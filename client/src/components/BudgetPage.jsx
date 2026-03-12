@@ -209,9 +209,9 @@ const BudgetPage = ({ budget, allBudgets, transactions, exchangeRate = 0.92, onS
 
             {/* History */}
             <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <h2 className="text-lg font-medium text-white">{t('budget.history')}</h2>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                         {availableYears.length > 1 && (
                             <div className="flex items-center gap-1.5">
                                 <Calendar className="w-3.5 h-3.5 text-muted-foreground" />

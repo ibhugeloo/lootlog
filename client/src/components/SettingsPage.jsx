@@ -139,7 +139,7 @@ const SettingsPage = ({ onClose, profile, updateProfile, plan, isPremium, onCanc
                         </div>
 
                         {/* Avatar grid */}
-                        <div className="grid grid-cols-8 gap-2">
+                        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
                             {AVATAR_OPTIONS.map(emoji => (
                                 <button
                                     key={emoji}
@@ -336,7 +336,7 @@ const SettingsPage = ({ onClose, profile, updateProfile, plan, isPremium, onCanc
                             <h3 className="text-[15px] font-semibold text-white">{t('settings.security.changePassword')}</h3>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-medium text-muted-foreground">
                                     {t('settings.security.newPassword')}

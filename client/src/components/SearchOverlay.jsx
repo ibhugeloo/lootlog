@@ -43,7 +43,7 @@ const SearchOverlay = ({ transactions, onSelect, onClose }) => {
             className="fixed inset-0 bg-[#0A0A0B]/80 z-50 flex items-start justify-center pt-[20vh]"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div className="w-full max-w-[560px] bg-[#141417] border border-[#1F1F23] rounded-xl shadow-2xl overflow-hidden">
+            <div className="w-full max-w-[560px] mx-4 bg-[#141417] border border-[#1F1F23] rounded-xl shadow-2xl overflow-hidden">
                 {/* Search input row */}
                 <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1F1F23]">
                     <Search className="w-5 h-5 text-[#505058] flex-shrink-0" />

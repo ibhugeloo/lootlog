@@ -273,7 +273,7 @@ const WishlistView = ({ transactions, onEdit, onDelete, onStatusChange, onSave, 
                                 )}
 
                                 {/* Actions */}
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
                                     <button
                                         onClick={() => onStatusChange(tx.id, 'Backlog')}
                                         className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"

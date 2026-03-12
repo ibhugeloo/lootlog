@@ -172,9 +172,9 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
     const filterLabelClass = "text-xs font-semibold text-secondary-foreground mb-1 block";
 
     return (
-        <div className="bg-card border border-border rounded-xl p-8">
+        <div className="bg-card border border-border rounded-xl p-4 sm:p-6 lg:p-8">
             {/* Summary Banner */}
-            <div className="bg-primary/5 border-l-4 border-primary rounded-lg p-5 mb-6 flex justify-between items-center flex-wrap gap-4">
+            <div className="bg-primary/5 border-l-4 border-primary rounded-lg p-3 sm:p-5 mb-6 flex justify-between items-center flex-wrap gap-4">
                 <div>
                     <h4 className="text-base font-semibold text-white m-0">{t('transactions.filteredExpenses')}</h4>
                     <p className="text-sm text-secondary-foreground mt-1 mb-0">
@@ -182,7 +182,7 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                     </p>
                 </div>
                 <div className="flex items-center gap-6">
-                    <div className="font-mono text-3xl font-bold text-primary">
+                    <div className="font-mono text-xl sm:text-3xl font-bold text-primary">
                         {totalSpent.toFixed(2)} €
                     </div>
                     {isPremium && (
@@ -210,7 +210,7 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                 </button>
 
                 {filtersOpen && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                         {/* Search */}
                         <div>
                             <label className={filterLabelClass}>{t('common.search')}</label>
@@ -354,22 +354,22 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                 <table className="w-full">
                     <thead className="border-b border-border text-xs text-muted-foreground">
                         <tr>
-                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('purchase_date')}>
+                            <th className="text-left font-medium px-2 sm:px-5 py-3 cursor-pointer hover:text-white transition-colors hidden md:table-cell" onClick={() => requestSort('purchase_date')}>
                                 {t('transactions.date')}{getSortIndicator('purchase_date')}
                             </th>
-                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('title')}>
+                            <th className="text-left font-medium px-2 sm:px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('title')}>
                                 {t('transactions.game')}{getSortIndicator('title')}
                             </th>
-                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('platform')}>
+                            <th className="text-left font-medium px-2 sm:px-5 py-3 cursor-pointer hover:text-white transition-colors hidden sm:table-cell" onClick={() => requestSort('platform')}>
                                 {t('transactions.platform')}{getSortIndicator('platform')}
                             </th>
-                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('price')}>
+                            <th className="text-left font-medium px-2 sm:px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('price')}>
                                 {t('transactions.price')}{getSortIndicator('price')}
                             </th>
-                            <th className="text-left font-medium px-5 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => requestSort('status')}>
+                            <th className="text-left font-medium px-2 sm:px-5 py-3 cursor-pointer hover:text-white transition-colors hidden lg:table-cell" onClick={() => requestSort('status')}>
                                 {t('transactions.status')}{getSortIndicator('status')}
                             </th>
-                            <th className="text-left font-medium px-5 py-3">
+                            <th className="text-left font-medium px-2 sm:px-5 py-3">
                                 {t('transactions.actions')}
                             </th>
                         </tr>
@@ -383,19 +383,19 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
 
                             return (
                                 <tr key={tx.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors">
-                                    <td className="px-5 py-3.5 whitespace-nowrap text-sm text-secondary-foreground">
+                                    <td className="px-2 sm:px-5 py-3.5 whitespace-nowrap text-sm text-secondary-foreground hidden md:table-cell">
                                         {formatDate(tx.purchase_date, i18n.language)}
                                     </td>
-                                    <td className="px-5 py-3.5">
+                                    <td className="px-2 sm:px-5 py-3.5">
                                         <div className="flex items-center gap-3">
                                             {tx.cover_url ? (
                                                 <img
                                                     src={tx.cover_url}
                                                     alt={tx.title}
-                                                    className="w-16 h-16 rounded-lg object-contain shrink-0"
+                                                    className="w-10 h-10 sm:w-16 sm:h-16 rounded-lg object-contain shrink-0"
                                                 />
                                             ) : (
-                                                <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                                                <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
                                                     <Gamepad2 size={24} className="text-primary opacity-60" />
                                                 </div>
                                             )}
@@ -407,17 +407,17 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-5 py-3.5">
+                                    <td className="px-2 sm:px-5 py-3.5 hidden sm:table-cell">
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-secondary-foreground">
                                             {tx.platform}
                                         </span>
                                     </td>
-                                    <td className="px-5 py-3.5 whitespace-nowrap">
+                                    <td className="px-2 sm:px-5 py-3.5 whitespace-nowrap">
                                         <span className="font-mono text-white text-sm">
                                             {parseFloat(tx.price).toFixed(2)} {tx.currency}
                                         </span>
                                     </td>
-                                    <td className="px-5 py-3.5">
+                                    <td className="px-2 sm:px-5 py-3.5 hidden lg:table-cell">
                                         {(tx.type && tx.type !== 'game') ? (
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${typePillClass}`}>
                                                 {TYPE_KEYS[tx.type] ? t(TYPE_KEYS[tx.type]) : tx.type}
@@ -428,7 +428,7 @@ const TransactionList = ({ transactions, onDelete, onEdit, exchangeRate = 0.92, 
                                             </span>
                                         )}
                                     </td>
-                                    <td className="px-5 py-3.5">
+                                    <td className="px-2 sm:px-5 py-3.5">
                                         <div className="flex items-center gap-1.5">
                                             <button
                                                 className="w-8 h-8 flex items-center justify-center rounded-md transition-colors text-primary hover:bg-primary/10"

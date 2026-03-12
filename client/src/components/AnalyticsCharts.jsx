@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, AreaChart, Area, LineChart, Line
@@ -20,6 +20,15 @@ const TOOLTIP_STYLE = {
 const AnalyticsCharts = ({ transactions, exchangeRate = 0.92, isPremium = false }) => {
     const { t, i18n } = useTranslation();
     const locale = getLocale(i18n.language);
+
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const mq = window.matchMedia('(max-width: 640px)');
+        setIsMobile(mq.matches);
+        const handler = (e) => setIsMobile(e.matches);
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+    }, []);
 
     // 1. Platform donut
     const platformData = useMemo(() => {
@@ -125,12 +134,12 @@ const AnalyticsCharts = ({ transactions, exchangeRate = 0.92, isPremium = false 
             {/* Main chart grid: Platform + Monthly */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Platform Distribution */}
-                <div className="bg-card border border-border rounded-xl p-6">
+                <div className="bg-card border border-border rounded-xl p-4 sm:p-6">
                     <h3 className="text-[15px] font-semibold text-white mb-6 flex items-center gap-2">
                         <PieChartIcon size={16} className="text-primary" />
                         {t('charts.spendingByPlatform')}
                     </h3>
-                    <div className="flex items-center gap-6">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
                         <div className="relative" style={{ width: 140, height: 140, flexShrink: 0 }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -166,7 +175,7 @@ const AnalyticsCharts = ({ transactions, exchangeRate = 0.92, isPremium = false 
                             <PieChartIcon size={16} className="text-primary" />
                             {t('charts.spendingByStore')}
                         </h3>
-                        <div className="flex items-center gap-6">
+                        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
                             <div className="relative" style={{ width: 140, height: 140, flexShrink: 0 }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
@@ -204,7 +213,7 @@ const AnalyticsCharts = ({ transactions, exchangeRate = 0.92, isPremium = false 
                 </div>
 
                 {/* Monthly Evolution + Highlights */}
-                <div className="bg-card border border-border rounded-xl p-6">
+                <div className="bg-card border border-border rounded-xl p-4 sm:p-6">
                     <h3 className="text-[15px] font-semibold text-white mb-6 flex items-center gap-2">
                         <TrendingUp size={16} className="text-primary" />
                         {t('charts.monthlyEvolution')}
@@ -248,7 +257,7 @@ const AnalyticsCharts = ({ transactions, exchangeRate = 0.92, isPremium = false 
             {/* Extra charts: Genre + Cumulative */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Genre Distribution */}
-                <div className="relative bg-card border border-border rounded-xl p-6">
+                <div className="relative bg-card border border-border rounded-xl p-4 sm:p-6">
                     {!isPremium && (
                         <div className="absolute inset-0 bg-card/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3 z-10">
                             <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
@@ -268,7 +277,7 @@ const AnalyticsCharts = ({ transactions, exchangeRate = 0.92, isPremium = false 
                         <p className="text-xs text-muted-foreground mb-6">
                             {t('charts.differentGenres', { count: genreData.length })}
                         </p>
-                        <div className="flex items-center gap-6">
+                        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
                             <div className="relative" style={{ width: 140, height: 140, flexShrink: 0 }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
@@ -305,7 +314,7 @@ const AnalyticsCharts = ({ transactions, exchangeRate = 0.92, isPremium = false 
                 </div>
 
                 {/* Cumulative Spending */}
-                <div className="relative bg-card border border-border rounded-xl p-6">
+                <div className="relative bg-card border border-border rounded-xl p-4 sm:p-6">
                     {!isPremium && (
                         <div className="absolute inset-0 bg-card/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3 z-10">
                             <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
@@ -347,7 +356,7 @@ const AnalyticsCharts = ({ transactions, exchangeRate = 0.92, isPremium = false 
             </div>
 
             {/* Top Games Bar Chart */}
-            <div className="relative bg-card border border-border rounded-xl p-6 mb-8">
+            <div className="relative bg-card border border-border rounded-xl p-4 sm:p-6 mb-8">
                 {!isPremium && (
                     <div className="absolute inset-0 bg-card/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3 z-10">
                         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
@@ -378,7 +387,7 @@ const AnalyticsCharts = ({ transactions, exchangeRate = 0.92, isPremium = false 
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1F1F23" horizontal={false} />
                                 <XAxis type="number" stroke={axisColor} fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `${v}€`} />
-                                <YAxis type="category" dataKey="name" stroke={axisColor} fontSize={12} tickLine={false} axisLine={false} width={150} tick={{ fill: '#ADADB0' }} />
+                                <YAxis type="category" dataKey="name" stroke={axisColor} fontSize={isMobile ? 10 : 12} tickLine={false} axisLine={false} width={isMobile ? 80 : 150} tick={{ fill: '#ADADB0' }} tickFormatter={v => isMobile && v.length > 12 ? v.slice(0, 12) + '…' : v} />
                                 <Tooltip content={<CustomTooltip />} cursor={{ fill: '#1A1A1F' }} />
                                 <Bar dataKey="value" fill="url(#barGrad)" radius={[0, 12, 12, 0]} barSize={24} />
                             </BarChart>

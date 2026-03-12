@@ -61,7 +61,7 @@ const NotificationDropdown = ({ transactions, budget, exchangeRate, onClose }) =
     return (
         <div
             ref={ref}
-            className="absolute right-0 top-full mt-2 w-80 bg-[#141417] border border-[#1F1F23] rounded-xl shadow-2xl z-50 overflow-hidden"
+            className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-[#141417] border border-[#1F1F23] rounded-xl shadow-2xl z-50 overflow-hidden"
         >
             {/* Header */}
             <div className="px-4 py-3 border-b border-[#1F1F23]">

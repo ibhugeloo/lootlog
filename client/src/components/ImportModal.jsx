@@ -45,7 +45,7 @@ const ImportModal = ({ onClose, userId }) => {
       className="fixed inset-0 bg-[#0A0A0B]/60 flex items-center justify-center z-50"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="w-[600px] max-h-[85vh] overflow-y-auto bg-[#141417] border border-[#1F1F23] rounded-xl">
+      <div className="w-full max-w-[600px] mx-4 max-h-[85vh] overflow-y-auto bg-[#141417] border border-[#1F1F23] rounded-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#1F1F23]">
           <h2 className="font-serif text-lg text-white">{t('import.title')}</h2>

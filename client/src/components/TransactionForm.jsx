@@ -330,7 +330,7 @@ const TransactionForm = ({ onAddTransaction, initialData = null, games = [] }) =
                 </div>
 
                 {/* Price + Currency + Hours */}
-                <div className="grid grid-cols-[2fr_1fr_1.5fr] gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-[2fr_1fr_1.5fr] gap-3">
                     <div className={formGroupClass}>
                         <label className={labelClass}>{t('form.price')}</label>
                         <input

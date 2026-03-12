@@ -33,7 +33,7 @@ const UpgradeModal = ({ onClose, onCheckout, checkoutLoading }) => {
             className="fixed inset-0 bg-[#0A0A0B]/60 flex items-center justify-center z-50"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div className="relative w-[560px] max-w-[calc(100vw-2rem)] bg-card rounded-2xl border border-white/[0.07] shadow-[0_20px_40px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden">
+            <div className="relative w-full max-w-[560px] mx-4 bg-card rounded-2xl border border-white/[0.07] shadow-[0_20px_40px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden">
                 {/* Close button */}
                 <button
                     onClick={onClose}
@@ -44,7 +44,7 @@ const UpgradeModal = ({ onClose, onCheckout, checkoutLoading }) => {
                 </button>
 
                 {/* Header */}
-                <div className="flex flex-col items-center text-center px-8 pt-8 pb-6">
+                <div className="flex flex-col items-center text-center px-4 sm:px-8 pt-8 pb-6">
                     <div className="w-14 h-14 rounded-full bg-gradient-to-b from-[#FF5C0030] to-[#FF5C0008] border border-[#FF5C0040] flex items-center justify-center mb-4">
                         <Crown size={26} className="text-primary" />
                     </div>
@@ -53,7 +53,7 @@ const UpgradeModal = ({ onClose, onCheckout, checkoutLoading }) => {
                 </div>
 
                 {/* Plan toggle */}
-                <div className="flex gap-3 px-8 pb-5">
+                <div className="flex gap-3 px-4 sm:px-8 pb-5">
                     <button
                         onClick={() => setSelectedPlan('monthly')}
                         className={`flex-1 p-4 rounded-xl border text-center cursor-pointer transition-all ${
@@ -87,7 +87,7 @@ const UpgradeModal = ({ onClose, onCheckout, checkoutLoading }) => {
                 </div>
 
                 {/* Feature comparison */}
-                <div className="flex gap-3 px-8 pb-6">
+                <div className="flex flex-col sm:flex-row gap-3 px-4 sm:px-8 pb-6">
                     {/* Free plan */}
                     <div className="flex-1 bg-[#1A1A1F] rounded-xl border border-white/[0.04] p-5">
                         <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
@@ -136,7 +136,7 @@ const UpgradeModal = ({ onClose, onCheckout, checkoutLoading }) => {
                 </div>
 
                 {/* CTA */}
-                <div className="px-8 pb-5">
+                <div className="px-4 sm:px-8 pb-5">
                     <button
                         className="w-full h-10 rounded-lg bg-primary text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-60"
                         onClick={handleCheckout}
@@ -157,7 +157,7 @@ const UpgradeModal = ({ onClose, onCheckout, checkoutLoading }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-center gap-4 px-8 pb-6">
+                <div className="flex items-center justify-center gap-4 px-4 sm:px-8 pb-6">
                     <span className="text-xs text-muted-foreground">30-day money back</span>
                     <span className="w-1 h-1 rounded-full bg-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Cancel anytime</span>

@@ -236,11 +236,11 @@ function App() {
 
   const DashboardContent = () => (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="font-serif text-2xl font-semibold text-white">{t('nav.dashboard')}</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => setShowSearch(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('common.search')}>
             <Search className="w-4 h-4" />
           </button>
@@ -267,7 +267,7 @@ function App() {
           </button>
           <button onClick={() => { if (!canAddTransaction(transactions.length)) { setShowUpgradeModal(true); } else { openAddModal(); } }} className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors">
             <Plus className="w-4 h-4" />
-            {t('header.addTransaction')}
+            <span className="hidden sm:inline">{t('header.addTransaction')}</span>
           </button>
         </div>
       </div>
@@ -294,31 +294,33 @@ function App() {
               <h2 className="text-[15px] font-semibold text-white">{t('transactions.filteredExpenses')}</h2>
               <NavLinkButton to="/transactions" />
             </div>
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground">
-                  <th className="text-left font-medium px-6 py-3">{t('transactions.game')}</th>
-                  <th className="text-left font-medium px-6 py-3">{t('transactions.platform')}</th>
-                  <th className="text-left font-medium px-6 py-3">{t('transactions.date')}</th>
-                  <th className="text-right font-medium px-6 py-3">{t('transactions.price')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeTransactions.slice(0, 6).map((tx) => (
-                  <tr key={tx.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => openEditModal(tx)}>
-                    <td className="px-6 py-3.5">
-                      <div className="flex items-center gap-3">
-                        {tx.cover_url ? <img src={tx.cover_url} alt="" className="w-10 h-10 rounded-lg object-contain shrink-0" /> : <div className="w-10 h-10 rounded-lg shrink-0 bg-primary/20" />}
-                        <span className="text-sm text-white font-medium truncate">{tx.title}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3.5"><span className="text-sm text-secondary-foreground">{tx.platform}</span></td>
-                    <td className="px-6 py-3.5"><span className="text-sm text-secondary-foreground">{new Date(tx.purchase_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></td>
-                    <td className="px-6 py-3.5 text-right"><span className="text-sm font-mono text-white">{parseFloat(tx.price).toFixed(2)} {tx.currency}</span></td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border text-xs text-muted-foreground">
+                    <th className="text-left font-medium px-3 sm:px-6 py-3">{t('transactions.game')}</th>
+                    <th className="text-left font-medium px-3 sm:px-6 py-3 hidden sm:table-cell">{t('transactions.platform')}</th>
+                    <th className="text-left font-medium px-3 sm:px-6 py-3 hidden sm:table-cell">{t('transactions.date')}</th>
+                    <th className="text-right font-medium px-3 sm:px-6 py-3">{t('transactions.price')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {activeTransactions.slice(0, 6).map((tx) => (
+                    <tr key={tx.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => openEditModal(tx)}>
+                      <td className="px-3 sm:px-6 py-3.5">
+                        <div className="flex items-center gap-3">
+                          {tx.cover_url ? <img src={tx.cover_url} alt="" className="w-10 h-10 rounded-lg object-contain shrink-0" /> : <div className="w-10 h-10 rounded-lg shrink-0 bg-primary/20" />}
+                          <span className="text-sm text-white font-medium truncate">{tx.title}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3.5 hidden sm:table-cell"><span className="text-sm text-secondary-foreground">{tx.platform}</span></td>
+                      <td className="px-3 sm:px-6 py-3.5 hidden sm:table-cell"><span className="text-sm text-secondary-foreground">{new Date(tx.purchase_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></td>
+                      <td className="px-3 sm:px-6 py-3.5 text-right"><span className="text-sm font-mono text-white">{parseFloat(tx.price).toFixed(2)} {tx.currency}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
         </>
@@ -328,16 +330,16 @@ function App() {
 
   const TransactionsContent = () => (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="font-serif text-2xl text-white">{t('nav.transactions')}</h1>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-2.5 border border-border text-secondary-foreground hover:text-white text-sm font-medium rounded-lg transition-colors">
-            <Upload className="w-4 h-4" />{t('header.import')}
+            <Upload className="w-4 h-4" /><span className="hidden sm:inline">{t('header.import')}</span>
           </button>
           <button onClick={() => { if (!canAddTransaction(transactions.length)) { setShowUpgradeModal(true); } else { openAddModal(); } }} className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors">
-            <Plus className="w-4 h-4" />{t('header.addTransaction')}
+            <Plus className="w-4 h-4" /><span className="hidden sm:inline">{t('header.addTransaction')}</span>
           </button>
         </div>
       </div>
@@ -405,7 +407,7 @@ function App() {
     <div className="flex h-screen bg-background">
       <Sidebar isPremium={isPremium} profile={profile} onSignOut={signOut} onUpgrade={() => { setShowUpgradeModal(true); trackEvent('upgrade_clicked'); }} />
 
-      <main className="flex-1 overflow-auto p-6 lg:p-8 xl:p-10 pl-16 lg:pl-8 xl:pl-10">
+      <main className="flex-1 overflow-auto p-4 pt-16 sm:p-6 sm:pt-6 lg:p-8 xl:p-10">
         <Routes>
           <Route path="/dashboard" element={<DashboardContent />} />
           <Route path="/transactions" element={<TransactionsContent />} />
@@ -420,7 +422,7 @@ function App() {
 
       {showForm && (
         <div className="fixed inset-0 bg-[#0A0A0B]/60 flex items-center justify-center z-50" onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false) }}>
-          <div className="w-[560px] max-h-[90vh] overflow-y-auto bg-card border border-border rounded-xl">
+          <div className="w-full max-w-[560px] mx-4 max-h-[90vh] overflow-y-auto bg-card border border-border rounded-xl">
             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
               <h2 className="font-serif text-lg text-white">{editingTransaction ? t('transactions.editTransaction') : t('transactions.newPurchase')}</h2>
               <button onClick={() => setShowForm(false)} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-white transition-colors"><X className="w-4 h-4" /></button>
@@ -434,7 +436,7 @@ function App() {
 
       {showBudgetModal && (
         <div className="fixed inset-0 bg-[#0A0A0B]/60 flex items-center justify-center z-50" onClick={(e) => { if (e.target === e.currentTarget) setShowBudgetModal(false) }}>
-          <div className="w-[400px] bg-card border border-border rounded-xl">
+          <div className="w-full max-w-[400px] mx-4 bg-card border border-border rounded-xl">
             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
               <h2 className="font-serif text-lg text-white">{t('budget.monthlyBudget')}</h2>
               <button onClick={() => setShowBudgetModal(false)} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-white transition-colors"><X className="w-4 h-4" /></button>

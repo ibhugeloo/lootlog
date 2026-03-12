@@ -62,7 +62,7 @@ const LandingPage = () => {
                     Game Expense Tracker
                 </div>
 
-                <h1 className="font-serif text-[56px] font-normal leading-tight tracking-tight text-white">
+                <h1 className="font-serif text-[28px] sm:text-[40px] lg:text-[56px] font-normal leading-tight tracking-tight text-white">
                     {t('landing.heroTitle')}
                 </h1>
 
