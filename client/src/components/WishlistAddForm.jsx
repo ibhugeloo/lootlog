@@ -75,7 +75,7 @@ const WishlistAddForm = ({ onSave, onCancel }) => {
         onSave({
             title: title.trim(),
             platform,
-            price: parseFloat(manualPrice) || 0,
+            price: parseFloat(manualPrice) || parseFloat(targetPrice) || 0,
             currency: 'EUR',
             status: 'Wishlist',
             type: 'game',

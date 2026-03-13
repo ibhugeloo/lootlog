@@ -20,7 +20,6 @@
     "menu": "Menu",
     "dashboard": "Dashboard",
     "transactions": "Transactions",
-    "analytics": "Analytics",
     "budget": "Budget",
     "wishlist": "Wishlist",
     "subscriptions": "Subscriptions",
@@ -60,7 +59,8 @@
     "viewAll": "All",
     "viewWishlist": "Wishlist",
     "exportCsv": "Export as CSV",
-    "import": "Import"
+    "import": "Import",
+    "editLayout": "Edit layout"
   },
   "stats": {
     "gamesPurchased": "Games purchased",

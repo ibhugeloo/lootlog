@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, X, Search, Bell, Download, Upload } from 'lucide-react';
+import { Plus, X, Search, Bell, Download, Upload, Pencil, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
@@ -17,7 +17,10 @@ import SettingsPage from './components/SettingsPage';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import StatsOverview from './components/StatsOverview';
-import AnalyticsCharts from './components/AnalyticsCharts';
+import { PlatformChart, MonthlyChart, CumulativeChart, TopGamesChart } from './components/AnalyticsCharts';
+import SortableWidget from './components/SortableWidget';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import BudgetWidget from './components/BudgetWidget';
 import BudgetForm from './components/BudgetForm';
 import BudgetPage from './components/BudgetPage';
@@ -234,99 +237,160 @@ function App() {
     return <OnboardingFlow profile={profile} onComplete={completeOnboarding} />;
   }
 
-  const DashboardContent = () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="font-serif text-2xl font-semibold text-white">{t('nav.dashboard')}</h1>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={() => setShowSearch(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('common.search')}>
-            <Search className="w-4 h-4" />
-          </button>
-          <div className="relative">
-            <button onClick={() => setShowNotifications(prev => !prev)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.notifications')}>
-              <Bell className="w-4 h-4" />
-              {isPremium && budget && (() => {
-                const now = new Date();
-                const monthSpent = activeTransactions
-                  .filter(tx => { const d = new Date(tx.purchase_date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
-                  .reduce((sum, tx) => sum + (parseFloat(tx.price) || 0), 0);
-                return monthSpent / budget.amount >= 0.8 ? <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" /> : null;
-              })()}
-            </button>
-            {showNotifications && (
-              <NotificationDropdown transactions={activeTransactions} budget={budget} exchangeRate={exchangeRate} onClose={() => setShowNotifications(false)} />
-            )}
-          </div>
-          <button onClick={() => { exportTransactionsCsv(activeTransactions); trackEvent('csv_exported', { count: activeTransactions.length }); }} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.exportCsv')}>
-            <Download className="w-4 h-4" />
-          </button>
-          <button onClick={() => setShowImport(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.import')}>
-            <Upload className="w-4 h-4" />
-          </button>
-          <button onClick={() => { if (!canAddTransaction(transactions.length)) { setShowUpgradeModal(true); } else { openAddModal(); } }} className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('header.addTransaction')}</span>
-          </button>
-        </div>
-      </div>
+  const DEFAULT_WIDGET_ORDER = ['stats', 'budget', 'transactions', 'platform', 'monthly', 'cumulative', 'topGames'];
 
-      {loading ? (
-        <><SkeletonStats /><SkeletonChart /><SkeletonTable /></>
-      ) : (
-        <>
-          <StatsOverview transactions={activeTransactions} exchangeRate={exchangeRate} />
-          {isPremium && (
-            <div className="cursor-pointer" onClick={() => setShowBudgetModal(true)}>
-              {budget ? (
-                <BudgetWidget budget={budget} transactions={activeTransactions} exchangeRate={exchangeRate} />
-              ) : (
-                <button className="w-full py-4 border border-dashed border-border rounded-xl text-sm text-muted-foreground hover:text-white hover:border-border-light transition-colors">
-                  + {t('header.setBudget')}
-                </button>
+  const DashboardContent = () => {
+    const [isEditingLayout, setIsEditingLayout] = useState(false);
+    const [widgetOrder, setWidgetOrder] = useState(() => {
+      try {
+        const saved = localStorage.getItem('lootlog-widget-order');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Ensure all default widgets are present (handles new widgets added later)
+          const missing = DEFAULT_WIDGET_ORDER.filter(id => !parsed.includes(id));
+          return [...parsed, ...missing];
+        }
+      } catch {}
+      return DEFAULT_WIDGET_ORDER;
+    });
+
+    const sensors = useSensors(
+      useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+      useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleDragEnd = (event) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        setWidgetOrder(prev => {
+          const oldIndex = prev.indexOf(active.id);
+          const newIndex = prev.indexOf(over.id);
+          const newOrder = arrayMove(prev, oldIndex, newIndex);
+          localStorage.setItem('lootlog-widget-order', JSON.stringify(newOrder));
+          return newOrder;
+        });
+      }
+    };
+
+    const widgetMap = {
+      stats: <StatsOverview transactions={activeTransactions} exchangeRate={exchangeRate} />,
+      budget: isPremium ? (
+        <div className="cursor-pointer" onClick={() => !isEditingLayout && setShowBudgetModal(true)}>
+          {budget ? (
+            <BudgetWidget budget={budget} transactions={activeTransactions} exchangeRate={exchangeRate} />
+          ) : (
+            <button className="w-full py-4 border border-dashed border-border rounded-xl text-sm text-muted-foreground hover:text-white hover:border-border-light transition-colors">
+              + {t('header.setBudget')}
+            </button>
+          )}
+        </div>
+      ) : null,
+      transactions: (
+        <div className="bg-card border border-border rounded-xl flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <h2 className="text-[15px] font-semibold text-white">{t('transactions.filteredExpenses')}</h2>
+            <NavLinkButton to="/transactions" />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border text-xs text-muted-foreground">
+                  <th className="text-left font-medium px-3 sm:px-6 py-3">{t('transactions.game')}</th>
+                  <th className="text-left font-medium px-3 sm:px-6 py-3 hidden sm:table-cell">{t('transactions.platform')}</th>
+                  <th className="text-left font-medium px-3 sm:px-6 py-3 hidden sm:table-cell">{t('transactions.date')}</th>
+                  <th className="text-right font-medium px-3 sm:px-6 py-3">{t('transactions.price')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeTransactions.slice(0, 6).map((tx) => (
+                  <tr key={tx.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => openEditModal(tx)}>
+                    <td className="px-3 sm:px-6 py-3.5">
+                      <div className="flex items-center gap-3">
+                        {tx.cover_url ? <img src={tx.cover_url} alt="" className="w-10 h-10 rounded-lg object-contain shrink-0" /> : <div className="w-10 h-10 rounded-lg shrink-0 bg-primary/20" />}
+                        <span className="text-sm text-white font-medium truncate">{tx.title}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-3.5 hidden sm:table-cell"><span className="text-sm text-secondary-foreground">{tx.platform}</span></td>
+                    <td className="px-3 sm:px-6 py-3.5 hidden sm:table-cell"><span className="text-sm text-secondary-foreground">{new Date(tx.purchase_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></td>
+                    <td className="px-3 sm:px-6 py-3.5 text-right"><span className="text-sm font-mono text-white">{parseFloat(tx.price).toFixed(2)} {tx.currency}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ),
+      platform: <PlatformChart transactions={activeTransactions} exchangeRate={exchangeRate} isPremium={isPremium} />,
+      monthly: <MonthlyChart transactions={activeTransactions} exchangeRate={exchangeRate} />,
+      cumulative: <CumulativeChart transactions={activeTransactions} exchangeRate={exchangeRate} isPremium={isPremium} />,
+      topGames: <TopGamesChart transactions={activeTransactions} exchangeRate={exchangeRate} isPremium={isPremium} />,
+    };
+
+    const visibleWidgets = widgetOrder.filter(id => widgetMap[id] != null);
+
+    return (
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h1 className="font-serif text-2xl font-semibold text-white">{t('nav.dashboard')}</h1>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => setShowSearch(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('common.search')}>
+              <Search className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setIsEditingLayout(prev => !prev)}
+              className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-colors ${isEditingLayout ? 'bg-primary border-primary text-white' : 'border-border text-muted-foreground hover:text-white hover:border-border-light'}`}
+              title={t('header.editLayout')}
+            >
+              {isEditingLayout ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+            </button>
+            <div className="relative">
+              <button onClick={() => setShowNotifications(prev => !prev)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.notifications')}>
+                <Bell className="w-4 h-4" />
+                {isPremium && budget && (() => {
+                  const now = new Date();
+                  const monthSpent = activeTransactions
+                    .filter(tx => { const d = new Date(tx.purchase_date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+                    .reduce((sum, tx) => sum + (parseFloat(tx.price) || 0), 0);
+                  return monthSpent / budget.amount >= 0.8 ? <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" /> : null;
+                })()}
+              </button>
+              {showNotifications && (
+                <NotificationDropdown transactions={activeTransactions} budget={budget} exchangeRate={exchangeRate} onClose={() => setShowNotifications(false)} />
               )}
             </div>
-          )}
-
-          <div className="bg-card border border-border rounded-xl flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h2 className="text-[15px] font-semibold text-white">{t('transactions.filteredExpenses')}</h2>
-              <NavLinkButton to="/transactions" />
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border text-xs text-muted-foreground">
-                    <th className="text-left font-medium px-3 sm:px-6 py-3">{t('transactions.game')}</th>
-                    <th className="text-left font-medium px-3 sm:px-6 py-3 hidden sm:table-cell">{t('transactions.platform')}</th>
-                    <th className="text-left font-medium px-3 sm:px-6 py-3 hidden sm:table-cell">{t('transactions.date')}</th>
-                    <th className="text-right font-medium px-3 sm:px-6 py-3">{t('transactions.price')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeTransactions.slice(0, 6).map((tx) => (
-                    <tr key={tx.id} className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => openEditModal(tx)}>
-                      <td className="px-3 sm:px-6 py-3.5">
-                        <div className="flex items-center gap-3">
-                          {tx.cover_url ? <img src={tx.cover_url} alt="" className="w-10 h-10 rounded-lg object-contain shrink-0" /> : <div className="w-10 h-10 rounded-lg shrink-0 bg-primary/20" />}
-                          <span className="text-sm text-white font-medium truncate">{tx.title}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-3.5 hidden sm:table-cell"><span className="text-sm text-secondary-foreground">{tx.platform}</span></td>
-                      <td className="px-3 sm:px-6 py-3.5 hidden sm:table-cell"><span className="text-sm text-secondary-foreground">{new Date(tx.purchase_date).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span></td>
-                      <td className="px-3 sm:px-6 py-3.5 text-right"><span className="text-sm font-mono text-white">{parseFloat(tx.price).toFixed(2)} {tx.currency}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <button onClick={() => { exportTransactionsCsv(activeTransactions); trackEvent('csv_exported', { count: activeTransactions.length }); }} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.exportCsv')}>
+              <Download className="w-4 h-4" />
+            </button>
+            <button onClick={() => setShowImport(true)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-white hover:border-border-light transition-colors" title={t('header.import')}>
+              <Upload className="w-4 h-4" />
+            </button>
+            <button onClick={() => { if (!canAddTransaction(transactions.length)) { setShowUpgradeModal(true); } else { openAddModal(); } }} className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('header.addTransaction')}</span>
+            </button>
           </div>
+        </div>
 
-        </>
-      )}
-    </div>
-  );
+        {loading ? (
+          <><SkeletonStats /><SkeletonChart /><SkeletonTable /></>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={visibleWidgets} strategy={verticalListSortingStrategy}>
+              <div className="flex flex-col gap-6">
+                {visibleWidgets.map(id => (
+                  <SortableWidget key={id} id={id} isEditing={isEditingLayout}>
+                    {widgetMap[id]}
+                  </SortableWidget>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
+    );
+  };
 
   const TransactionsContent = () => (
     <div className="flex flex-col gap-6">
@@ -355,15 +419,6 @@ function App() {
         </div>
       )}
       <TransactionList transactions={activeTransactions} onDelete={handleDelete} onEdit={openEditModal} exchangeRate={exchangeRate} isPremium={isPremium} />
-    </div>
-  );
-
-  const AnalyticsContent = () => (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center gap-3">
-        <h1 className="font-serif text-2xl font-semibold text-white">{t('nav.analytics')}</h1>
-      </div>
-      {loading ? <SkeletonChart /> : <AnalyticsCharts transactions={activeTransactions} exchangeRate={exchangeRate} isPremium={isPremium} />}
     </div>
   );
 
@@ -411,7 +466,6 @@ function App() {
         <Routes>
           <Route path="/dashboard" element={<DashboardContent />} />
           <Route path="/transactions" element={<TransactionsContent />} />
-          <Route path="/analytics" element={<AnalyticsContent />} />
           <Route path="/budget" element={<BudgetContent />} />
           <Route path="/wishlist" element={<WishlistContent />} />
           <Route path="/subscriptions" element={<SubscriptionsContent />} />
